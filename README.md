@@ -40,7 +40,7 @@ This project is intended for interoperability, research, preservation and compat
 
 AnyBox is an independent project. It is not affiliated with, authorized or endorsed by Microsoft. "Xbox", "Xbox One" and "Xbox Series X|S" are trademarks of the Microsoft group of companies.
 
-Its structure, its tracking and its "implement or throw" rule follow [AnyPS5](https://github.com/boykopovar/AnyPS5), a PS5 counterpart.
+AnyBox is built to be like [AnyPS5](https://github.com/boykopovar/AnyPS5), for Xbox.
 
 ## License
 
