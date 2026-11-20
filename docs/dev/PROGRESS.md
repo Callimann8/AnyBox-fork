@@ -28,6 +28,24 @@ python tools/progress.py --compare base.json head.json   # Markdown table for a 
 - [Pages workflow](../../.github/workflows/pages.yml): on pushes to `main` that touch `core/libs`, the tools or the docs, it publishes the progress page, map, badge and history to GitHub Pages.
 - [Progress report workflow](../../.github/workflows/progress-report.yml): on pull requests, it compares the base and head trees and posts the Markdown table to the job summary.
 
+## What still needs implementing
+
+Progress counts only what AnyBox already declares. Three tools find everything else and rank it, without implementing anything:
+
+1. [`tools/lib_inventory.py`](../../tools/lib_inventory.py) lists every export of import libraries (`.lib`, short format, as an installed GDK ships them) or DLLs, and stores the names in [`docs/inventory`](../inventory) with `--json`.
+2. [`tools/import_audit.py`](../../tools/import_audit.py) `--needs docs/needs/<TitleId>.json` stores what one title imports, minus host and bundled DLLs, in [`docs/needs`](../needs).
+3. [`tools/needs.py`](../../tools/needs.py) merges both with the current library scan:
+   - every known function, with its DLL, the library that serves it, its status and the titles that import it, sorted so the functions most titles need and AnyBox lacks come first;
+   - per DLL: known exports, how many titles need it, declared, done;
+   - per title: how many of its imports are done, and its next blockers.
+
+```
+python tools/needs.py site/            # needs.json, needs.html; prints a Markdown summary
+python tools/stubgen.py --from-audit site/needs.json   # declares every absent function as a stub
+```
+
+The Pages workflow publishes `needs.html` next to the progress page.
+
 ## Title imports
 
 [`tools/import_audit.py`](../../tools/import_audit.py) reads a title's PE files and classifies every import:

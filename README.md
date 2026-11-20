@@ -30,7 +30,7 @@ Per-title status lives in the **Game bring-up** discussions, one thread per titl
 
 ## Where to start contributing
 
-1. Pick a stub from the [progress page](https://dark3581.github.io/AnyBox/progress.html), or audit a title you own with `python tools/import_audit.py <package>` to find the stubs it hits first.
+1. Pick the top item on the [needs page](https://dark3581.github.io/AnyBox/needs.html), which ranks what titles need and AnyBox lacks. Or audit a title you own with `python tools/import_audit.py <package> --needs docs/needs/<TitleId>.json` and contribute the record so it counts.
 2. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [XTaskQueue implementation](core/libs/xdll/xgameruntime/TaskQueue.cpp) as a worked example.
 3. Open a pull request with the [template](.github/pull_request_template.md). CI runs the conventions check and posts the progress change.
 

@@ -129,7 +129,7 @@ Compatibility lives in the <a href="https://github.com/{REPOSITORY}/discussions/
 <p><img src="progress.svg" alt="progress map"></p>
 <div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Declared</th><th>Done</th><th>Known gaps</th><th>Stubs to pick up</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
-<p><a href="history.html">Progress history</a> · commit {escape(data["commit"] or "unknown")}</p>
+<p><a href="needs.html">What titles still need</a> · <a href="history.html">Progress history</a> · commit {escape(data["commit"] or "unknown")}</p>
 </body></html>
 """
 

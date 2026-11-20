@@ -79,6 +79,8 @@ def add_stubs(root, name, functions):
 
 def from_audit(root, path):
     rows = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(rows, dict):
+        rows = rows.get("rows", [])
     absent = defaultdict(list)
     unrouted = defaultdict(set)
     for row in rows:
@@ -97,7 +99,7 @@ def main():
     parser = argparse.ArgumentParser(description="Add AbxNotImplemented stubs for imports AnyBox does not declare yet.")
     parser.add_argument("--library", help="library directory name under core/libs/xdll")
     parser.add_argument("--names", nargs="+", default=[], help="function names to stub")
-    parser.add_argument("--from-audit", type=Path, help="JSON written by tools/import_audit.py --json")
+    parser.add_argument("--from-audit", type=Path, help="JSON written by tools/import_audit.py --json, or needs.json from tools/needs.py")
     parser.add_argument("--new-library", metavar="NAME", help="create a library skeleton")
     parser.add_argument("--dll", action="append", default=[], help="DLL name the new library serves; repeatable")
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)

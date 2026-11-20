@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 import struct
 import sys
 from collections import Counter
@@ -74,6 +75,24 @@ class Pe:
                 return functions
             functions.append(f"#{thunk & 0xFFFF}" if thunk & ORDINAL_FLAG else self.string((thunk & 0x7FFFFFFF) + 2))
 
+    def exports(self):
+        if not self.directories or not self.directories[0][0]:
+            return None, []
+        start, size = self.directories[0]
+        offset = self.offset(start)
+        name_rva, base, functions, names, address_table, name_table, ordinal_table = struct.unpack_from("<IIIIIII", self.data, offset + 12)
+        dll = self.string(name_rva) if name_rva else None
+        named = {}
+        for index in range(names):
+            ordinal = self.u16(self.offset(ordinal_table) + index * 2)
+            named[ordinal] = self.string(self.u32(self.offset(name_table) + index * 4))
+        result = []
+        for index in range(functions):
+            if self.u32(self.offset(address_table) + index * 4) == 0:
+                continue
+            result.append(named.get(index, f"#{base + index}"))
+        return dll, result
+
     def imports(self):
         modules = []
         if len(self.directories) > 1 and self.directories[1][0]:
@@ -131,16 +150,45 @@ def audit(files, libraries, hosts):
     return rows
 
 
+def title_metadata(paths):
+    for path in paths:
+        folder = path if path.is_dir() else path.parent
+        config = folder / "MicrosoftGame.config"
+        if not config.exists():
+            continue
+        raw = config.read_bytes()
+        text = raw.decode("utf-16") if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else raw.decode("utf-8-sig", errors="replace")
+        title_id = re.search(r"<TitleId>\s*([0-9A-Fa-f]{8})\s*</TitleId>", text)
+        identity = re.search(r"<Identity\b[^>]*>", text)
+        version = re.search(r"\sVersion\s*=\s*\"([0-9]+(?:\.[0-9]+){3})\"", identity.group()) if identity else None
+        name = re.search(r"<ShellVisuals\b[^>]*\bDefaultDisplayName\s*=\s*\"([^\"]*)\"", text)
+        display = name.group(1) if name and not name.group(1).startswith("ms-resource:") else None
+        return {"titleId": title_id.group(1).upper() if title_id else None, "name": display, "version": version.group(1) if version else None}
+    return {"titleId": None, "name": None, "version": None}
+
+
+def needs_record(rows, metadata):
+    imports = {}
+    for row in rows:
+        if row["status"] in ("bundled", "host"):
+            continue
+        imports.setdefault(row["dll"].lower(), set()).add(row["function"])
+    return {"format": "anybox-needs", "version": 1, **metadata,
+            "imports": {dll: sorted(functions) for dll, functions in sorted(imports.items())}}
+
+
 def main():
     parser = argparse.ArgumentParser(description="List a GDK title's imports and what AnyBox does with each one.")
     parser.add_argument("paths", nargs="+", type=Path, help="executables, DLLs or package folders (decrypted)")
     parser.add_argument("--json", type=Path, help="write the rows as JSON (input for tools/stubgen.py --from-audit)")
+    parser.add_argument("--needs", type=Path, help="write the title's needs record (docs/needs/<TitleId>.json): only DLL and function names")
     parser.add_argument("--strict-stubs", action="store_true", help="fail when a stub is imported")
     parser.add_argument("--all", action="store_true", help="also print implemented, forwarded, bundled and host rows")
     args = parser.parse_args()
 
     libraries = anybox_scan.scan()
-    rows = audit(collect(args.paths), libraries, anybox_scan.host_patterns())
+    files = collect(args.paths)
+    rows = audit(files, libraries, anybox_scan.host_patterns())
     errors = [row for row in rows if "error" in row]
     rows = [row for row in rows if "error" not in row]
     for row in errors:
@@ -151,6 +199,11 @@ def main():
             print(f"{row['status']:<11} {row['file']}: {row['dll']}!{row['function']}{' (delay)' if row['delayLoaded'] else ''}")
     counts = Counter(row["status"] for row in rows)
     print("summary: " + ", ".join(f"{name} {counts.get(name, 0)}" for name in CLASSES))
+    if args.needs:
+        record = needs_record(rows, title_metadata(args.paths))
+        args.needs.parent.mkdir(parents=True, exist_ok=True)
+        args.needs.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+        print(f"needs record for {record['titleId'] or 'unknown title'}: {sum(map(len, record['imports'].values()))} functions from {len(record['imports'])} DLLs")
     if args.json:
         args.json.write_text(json.dumps(rows, indent=1) + "\n", encoding="utf-8")
     failing = counts.get("absent", 0) + counts.get("unrouted", 0) + (counts.get("stub", 0) if args.strict_stubs else 0)

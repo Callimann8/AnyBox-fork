@@ -4,6 +4,7 @@ Thanks for helping. AnyBox grows one function at a time, and most contributions 
 
 ## Find something to do
 
+- **Needs page.** The [needs page](https://dark3581.github.io/AnyBox/needs.html) ranks every known function by how many titles need it and AnyBox lacks it. Start from the top. Add your own titles to it with `python tools/import_audit.py <package> --needs docs/needs/<TitleId>.json` ([details](docs/needs/README.md)).
 - **Progress page.** Every stub is listed per library on the [progress page](https://dark3581.github.io/AnyBox/progress.html). Locally: `python tools/progress.py --module xgameruntime`.
 - **A title you own.** `python tools/import_audit.py <decrypted package folder>` lists every import as `implemented`, `forwarded`, `stub`, `absent` (no AnyBox declaration yet) or `unrouted` (no library serves the DLL). Run it before you start, so you work on what the title actually calls.
 - **Issues** labeled `good first issue` and `library request`.
