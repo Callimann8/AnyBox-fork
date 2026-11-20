@@ -1,0 +1,75 @@
+title: "Game name (0000ABCD)"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One thread per title: search this category for the title ID first. If a thread exists, reply there.
+        Name the discussion `Game name (title ID)`, with the 8-digit `<TitleId>` from `MicrosoftGame.config`.
+        Bug reports and implementation work belong in issues and pull requests; link them here as the blocker.
+        Only share material you have the right to distribute. Never attach game files or keys.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Existing thread
+      options:
+        - label: I searched this category for the title ID and no thread exists.
+          required: true
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      placeholder: Example Game (0000ABCD)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Content version tested
+      description: The `Version` of `<Identity>` in `MicrosoftGame.config`.
+      placeholder: 1.0.12.0
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: AnyBox commit
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System tested
+      placeholder: Windows 11 24H2, Ryzen 7 7700X, RX 7800 XT (Adrenalin 24.12.1)
+    validations:
+      required: true
+  - type: dropdown
+    id: reached
+    attributes:
+      label: Furthest point
+      options:
+        - Does not convert
+        - Stops before the first frame
+        - Logos or loading screen
+        - Menu
+        - In game
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Run report summary
+      description: The line from `python tools/run_report_summary.py anybox-report.json`.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: audit
+    attributes:
+      label: Import audit summary
+      description: The `summary:` line from `python tools/import_audit.py <package>`.
+      render: text
+  - type: textarea
+    id: blocker
+    attributes:
+      label: Current blocker
+      description: The function or crash it stops at, the issue that tracks it, and the open pull requests it still needs.

@@ -1,0 +1,7 @@
+EXPORTS
+    XAudio2Create=xaudio2_9.XAudio2Create
+    CreateAudioReverb=xaudio2_9.CreateAudioReverb
+    CreateAudioVolumeMeter=xaudio2_9.CreateAudioVolumeMeter
+    CreateFX=xaudio2_9.CreateFX
+    X3DAudioInitialize=xaudio2_9.X3DAudioInitialize
+    X3DAudioCalculate=xaudio2_9.X3DAudioCalculate

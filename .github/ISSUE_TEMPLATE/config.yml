@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Game bring-up
+    url: https://github.com/Dark3581/AnyBox/discussions/categories/game-bring-up
+    about: Per-title status and run reports, one thread per title ID.

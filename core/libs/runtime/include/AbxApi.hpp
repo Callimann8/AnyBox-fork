@@ -1,0 +1,27 @@
+#pragma once
+
+#include <cstdint>
+
+#if defined(ABX_RUNTIME_BUILD)
+#define ABX_RUNTIME_API extern "C" __declspec(dllexport)
+#else
+#define ABX_RUNTIME_API extern "C" __declspec(dllimport)
+#endif
+
+#define ABX_API extern "C" __declspec(dllexport)
+
+#ifndef ABX_LIBRARY_NAME
+#define ABX_LIBRARY_NAME "unknown"
+#endif
+
+inline constexpr int AbxExitNotImplemented = 0xAB01;
+inline constexpr int AbxExitUnsupported = 0xAB02;
+
+ABX_RUNTIME_API [[noreturn]] void AbxNotImplementedAt(const char* library, const char* function, const char* file, int line);
+ABX_RUNTIME_API [[noreturn]] void AbxUnsupportedAt(const char* library, const char* function, const char* message, const char* file, int line);
+ABX_RUNTIME_API void AbxLog(const char* channel, const char* format, ...);
+ABX_RUNTIME_API const char* AbxTitleId();
+ABX_RUNTIME_API const char* AbxTitleName();
+
+#define AbxNotImplemented(name) AbxNotImplementedAt(ABX_LIBRARY_NAME, name, __FILE__, __LINE__)
+#define AbxUnsupported(name, message) AbxUnsupportedAt(ABX_LIBRARY_NAME, name, message, __FILE__, __LINE__)

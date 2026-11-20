@@ -1,0 +1,29 @@
+name: Library or function request
+description: A title imports a DLL or function AnyBox does not declare or implement yet.
+labels: [library request]
+body:
+  - type: input
+    id: dll
+    attributes:
+      label: DLL and functions
+      placeholder: xgameruntime.dll!XUserAddAsync, XUserGetId
+    validations:
+      required: true
+  - type: textarea
+    id: audit
+    attributes:
+      label: import_audit.py output
+      description: The stub, absent and unrouted lines and the summary line.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Title that needs it
+      description: Name and title ID, and its Game bring-up discussion if there is one.
+  - type: textarea
+    id: reference
+    attributes:
+      label: Public reference
+      description: Links to public documentation or headers describing the behaviour, if you know them.

@@ -1,0 +1,16 @@
+add_library(fake_xgameruntime SHARED FakeXGameRuntime.cpp)
+set_target_properties(fake_xgameruntime PROPERTIES PREFIX "" OUTPUT_NAME xgameruntime)
+anybox_static_runtime(fake_xgameruntime)
+
+add_executable(fake_title FakeTitle.cpp)
+target_link_libraries(fake_title PRIVATE fake_xgameruntime)
+anybox_static_runtime(fake_title)
+
+if(Python3_FOUND)
+    foreach(scenario IN ITEMS taskqueue stub crash)
+        add_test(NAME e2e_${scenario}
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/e2e.py
+                --relinker $<TARGET_FILE:relinker> --title $<TARGET_FILE:fake_title> --libs ${ANYBOX_LIBS_DIR}
+                --work ${CMAKE_CURRENT_BINARY_DIR}/e2e_${scenario} --scenario ${scenario})
+    endforeach()
+endif()

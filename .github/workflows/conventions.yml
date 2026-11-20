@@ -1,0 +1,32 @@
+name: Conventions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  conventions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check conventions
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: |
+          if [ -n "$BASE" ]; then
+            python tools/check_conventions.py --base "$BASE"
+          else
+            python tools/check_conventions.py --no-commits
+          fi
+      - name: Check debt fragments
+        run: python tools/debt_fold.py --check

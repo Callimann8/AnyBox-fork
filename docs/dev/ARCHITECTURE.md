@@ -1,0 +1,84 @@
+# Architecture
+
+How a GDK executable becomes a Windows program. Nothing is emulated: the converted executable runs as a normal process and calls native implementations of the system libraries.
+
+## Overview
+
+```mermaid
+flowchart LR
+    subgraph input["GDK title (decrypted)"]
+        exe["game.exe (PE32+, subsystem Xbox)"]
+        dlls["bundled *.dll"]
+        cfg["MicrosoftGame.config"]
+    end
+
+    subgraph relinker["relinker (core/relinker)"]
+        direction TB
+        parse["PeImage: parse headers,<br/>imports, delay imports"]
+        route["LibraryMap: route each DLL<br/>bundled / library / host / unknown"]
+        write["Conversion: rename routed DLLs,<br/>unbind, drop certificate,<br/>Xbox → Windows subsystem, checksum"]
+        parse --> route --> write
+    end
+
+    subgraph libs["build (core/libs)"]
+        rt["ab_runtime.dll:<br/>stops, run report, title metadata"]
+        x["ab_&lt;library&gt;.dll<br/>implemented / forwarded / stub"]
+        x --> rt
+    end
+
+    subgraph out["Windows program"]
+        app["game.exe"]
+        mods["converted bundled DLLs"]
+        ab["ab_*.dll"]
+    end
+
+    exe --> parse
+    dlls --> parse
+    write --> app
+    write --> mods
+    x --> ab
+    app -- "Windows loader binds imports by name" --> ab
+```
+
+## Why this works for GDK
+
+- GDK titles are x86-64 PE32+ images, the format the Windows loader already reads. There is no instruction translation and no ABI thunking: Windows x64 has one calling convention, and console and PC code both use it.
+- What differs is the environment: the subsystem field (`IMAGE_SUBSYSTEM_XBOX`, 14), the console-only system DLLs the title imports (XGameRuntime, D3D12.X, kernelx and others), and the hardware behind them.
+
+## Relinker
+
+[`Conversion::Convert`](../../core/relinker/relinker/src/Conversion.cpp), called from [`main.cpp`](../../core/relinker/main.cpp):
+
+1. **Parse.** [`PeImage`](../../core/relinker/pe/src/PeImage.cpp) reads the headers, sections, import and delay-import descriptors (by name and by ordinal) and exports. Only AMD64 PE32+ native images are accepted.
+2. **Route.** [`LibraryMap`](../../core/relinker/relinker/src/LibraryMap.cpp) resolves each imported DLL, first match wins:
+   1. **bundled:** a DLL the title ships, from the input's folder or a `--module-dir`. Its name is kept, and it is converted too.
+   2. **library:** a pattern in some `core/libs/xdll/<name>/Imports.txt`. The import is renamed to `ab_<name>.dll`.
+   3. **host:** a pattern in [`HostDlls.txt`](../../core/relinker/HostDlls.txt): the desktop OS provides it unchanged (API sets, the CRT, `kernel32`).
+   4. **unknown:** conversion fails and names the DLL, unless `--allow-unknown`.
+   CMake generates the table from these files at configure time ([`cmake/LibraryMap.cmake`](../../cmake/LibraryMap.cmake)), so adding a library needs no relinker change.
+3. **Rewrite.** New DLL names go in an appended `.abximp` section, and each descriptor's name RVA is pointed at them. Descriptors, thunks and the IAT stay where they are, so code that calls through the IAT is unaffected. Bound imports are unbound (the IAT is restored from the lookup table). The Authenticode certificate is dropped, because the image no longer matches it. The subsystem becomes Windows GUI (or console with `--console`), and the checksum is recomputed.
+4. **Report.** `--registry` writes `<output>.registry.json` with every import and its route; `tools/import_audit.py` reads PE files directly for the same view against the library sources.
+
+## Libraries
+
+- Each folder in [`core/libs/xdll`](../../core/libs/xdll) builds `ab_<name>.dll` through `anybox_add_xdll` ([`core/libs/CMakeLists.txt`](../../core/libs/CMakeLists.txt)).
+- An export is one of:
+  - **implemented:** an `ABX_API` definition (`extern "C" __declspec(dllexport)`);
+  - **forwarded:** a `Name=hostdll.Name` line in `Forwards.def`, which the Windows loader resolves to the host DLL;
+  - **stub:** an `ABX_API` definition whose body calls `AbxNotImplemented(__func__)`.
+- [`ab_runtime.dll`](../../core/libs/runtime/src/Runtime.cpp) is shared by every library:
+  - `AbxNotImplemented` / `AbxUnsupported` log the library and function, write the run report and end the process with exit code `0xAB01` / `0xAB02`. A title cannot catch these.
+  - An unhandled exception filter writes the report for crashes (code, address, module and offset).
+  - At normal process exit the report is written with `stop.kind = "none"`.
+  - `AbxTitleId()` and `AbxTitleName()` read `MicrosoftGame.config` beside the executable.
+  - Each library registers itself at load ([`Registration.cpp`](../../core/libs/runtime/src/Registration.cpp)), so the report lists the libraries the title loaded.
+- Libraries link their C++ runtime statically, so the output folder needs no MinGW DLLs.
+
+## Run report
+
+`anybox-report.json`, schema [docs/run-report.schema.json](../run-report.schema.json), fixtures in [docs/run-report-fixtures](../run-report-fixtures). A value the runtime cannot know is `null`, never a guess.
+
+## Tests
+
+- [`relinker_tests`](../../core/relinker/tests/RelinkerTests.cpp) build synthetic Xbox PE images in memory ([`SyntheticPe.cpp`](../../core/relinker/tests/SyntheticPe.cpp)) and check routing, unbinding, certificate removal, delay imports, header room and checksums.
+- [`e2e.py`](../../core/libs/tests/e2e.py) takes a real title built against a stand-in console `xgameruntime.dll`, marks it as Xbox subsystem, relinks it, runs it on the AnyBox libraries, and checks its output and run report for a working run, a stub stop and a crash.

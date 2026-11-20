@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnyBox run report",
+  "description": "anybox-report.json, version 1, written by ab_runtime.dll beside the converted executable when the run stops. A value the runtime cannot know is null, never a guess. At most 65,536 bytes of UTF-8.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "generated", "anybox", "game", "system", "run", "libraries", "truncated", "stop"],
+  "properties": {
+    "format": { "const": "anybox-report" },
+    "version": { "const": 1 },
+    "generated": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "anybox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "release", "modified"],
+      "properties": {
+        "commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" },
+        "release": { "type": ["string", "null"], "pattern": "^v[0-9A-Za-z][0-9A-Za-z._-]{0,63}$" },
+        "modified": { "type": ["boolean", "null"] }
+      }
+    },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["titleId", "identityName", "version", "name"],
+      "properties": {
+        "titleId": { "type": ["string", "null"], "pattern": "^[0-9A-F]{8}$" },
+        "identityName": { "$ref": "#/$defs/text" },
+        "version": { "type": ["string", "null"], "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "name": { "$ref": "#/$defs/text" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "osVersion", "cpu", "ramGiB", "gpu"],
+      "properties": {
+        "os": { "enum": ["windows", "linux", null] },
+        "osVersion": { "$ref": "#/$defs/text" },
+        "cpu": { "$ref": "#/$defs/text" },
+        "ramGiB": { "type": ["integer", "null"], "minimum": 1 },
+        "gpu": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["vendor", "name", "driver"],
+          "properties": {
+            "vendor": { "enum": ["AMD", "NVIDIA", "Intel", "Other", null] },
+            "name": { "$ref": "#/$defs/text" },
+            "driver": { "$ref": "#/$defs/text" }
+          }
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seconds", "exitCode"],
+      "properties": {
+        "seconds": { "type": "number", "minimum": 0 },
+        "exitCode": { "type": ["integer", "null"] }
+      }
+    },
+    "libraries": {
+      "description": "AnyBox libraries loaded in the process, in load order.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9_.-]{1,64}$" }
+    },
+    "truncated": { "type": "boolean" },
+    "stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "library", "function", "location", "message", "exception"],
+      "properties": {
+        "kind": { "enum": ["none", "not-implemented", "unsupported", "crash"] },
+        "library": { "$ref": "#/$defs/text" },
+        "function": { "$ref": "#/$defs/text" },
+        "location": { "$ref": "#/$defs/text" },
+        "message": { "type": ["string", "null"], "maxLength": 4096 },
+        "exception": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["code", "address", "module", "offset"],
+          "properties": {
+            "code": { "type": "string", "pattern": "^0x[0-9a-f]{8}$" },
+            "address": { "type": "string", "pattern": "^0x[0-9a-f]+$" },
+            "module": { "$ref": "#/$defs/text" },
+            "offset": { "type": ["string", "null"], "pattern": "^0x[0-9a-f]+$" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": { "type": ["string", "null"], "maxLength": 512 }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "format": "anybox-report",
+  "version": 1,
+  "generated": "2026-11-20T12:00:00Z",
+  "anybox": {
+    "commit": null,
+    "release": null,
+    "modified": null
+  },
+  "game": {
+    "titleId": "1234ABCD",
+    "identityName": "AnyBox.FakeTitle",
+    "version": "1.0.2.0",
+    "name": "Fake Title"
+  },
+  "system": {
+    "os": "windows",
+    "osVersion": "10.0.19045",
+    "cpu": "Example 8-Core Processor",
+    "ramGiB": 16,
+    "gpu": null
+  },
+  "run": {
+    "seconds": 42.0,
+    "exitCode": null
+  },
+  "libraries": [
+    "xgameruntime"
+  ],
+  "truncated": false,
+  "stop": {
+    "kind": "not-implemented",
+    "library": "xgameruntime",
+    "function": "XUserAddAsync",
+    "location": "core/libs/xdll/xgameruntime/Inventory.cpp:19",
+    "message": null,
+    "exception": null
+  }
+}

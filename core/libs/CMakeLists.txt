@@ -1,0 +1,53 @@
+set(ANYBOX_LIBS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/runtime/include)
+set(ANYBOX_REGISTRATION_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/runtime/src/Registration.cpp)
+
+add_custom_target(libs ALL)
+
+function(anybox_static_runtime target)
+    if(MINGW)
+        target_link_options(${target} PRIVATE -static)
+    endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target} PRIVATE -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=)
+    endif()
+endfunction()
+
+if(ANYBOX_MODIFIED STREQUAL "")
+    set(modified_value -1)
+else()
+    set(modified_value ${ANYBOX_MODIFIED})
+endif()
+
+add_library(abx_runtime SHARED runtime/src/Runtime.cpp runtime/src/TitleConfig.cpp)
+set_target_properties(abx_runtime PROPERTIES PREFIX "" OUTPUT_NAME ab_runtime
+    RUNTIME_OUTPUT_DIRECTORY ${ANYBOX_LIBS_DIR} ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(abx_runtime PRIVATE ABX_RUNTIME_BUILD ABX_LIBRARY_NAME="runtime"
+    ANYBOX_COMMIT="${ANYBOX_COMMIT}" ANYBOX_RELEASE="${ANYBOX_RELEASE}" ANYBOX_MODIFIED=${modified_value})
+target_include_directories(abx_runtime PUBLIC runtime/include PRIVATE runtime/src)
+anybox_static_runtime(abx_runtime)
+add_dependencies(libs abx_runtime)
+
+function(anybox_add_xdll name)
+    cmake_parse_arguments(ARG "" "" "SOURCES;LINK" ${ARGN})
+    set(target ab_${name})
+    set(sources ${ARG_SOURCES} ${ANYBOX_REGISTRATION_SOURCE})
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Forwards.def)
+        list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/Forwards.def)
+    endif()
+    add_library(${target} SHARED ${sources})
+    set_target_properties(${target} PROPERTIES PREFIX "" OUTPUT_NAME ${target}
+        RUNTIME_OUTPUT_DIRECTORY ${ANYBOX_LIBS_DIR} ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    target_compile_definitions(${target} PRIVATE ABX_LIBRARY_NAME="${name}")
+    target_include_directories(${target} PRIVATE ${ANYBOX_LIBS_INCLUDE})
+    target_link_libraries(${target} PRIVATE abx_runtime ${ARG_LINK})
+    anybox_static_runtime(${target})
+    add_dependencies(libs ${target})
+endfunction()
+
+foreach(library IN LISTS ANYBOX_LIBRARY_NAMES)
+    add_subdirectory(xdll/${library})
+endforeach()
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

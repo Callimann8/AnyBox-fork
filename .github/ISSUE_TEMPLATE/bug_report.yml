@@ -1,0 +1,44 @@
+name: Bug report
+description: The relinker, a library or a tool does something wrong.
+labels: [bug]
+body:
+  - type: input
+    id: commit
+    attributes:
+      label: AnyBox commit
+      description: The `main` commit you built, and any pull requests merged on top.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: Windows 11 24H2, MinGW GCC 15.2, RTX 4070 (566.36)
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [relinker, runtime / run report, a library, tools, build]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Run report or command output
+      description: The `run_report_summary.py` line, `anybox-report.json`, or the relinker's error.
+      render: text
+  - type: checkboxes
+    id: legal
+    attributes:
+      label: Material
+      options:
+        - label: I attached no game files, executables or keys.
+          required: true
