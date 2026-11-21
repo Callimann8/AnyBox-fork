@@ -12,6 +12,11 @@ const LibraryRoute BuiltinRoutes[] = {
     {"", "", ""},
 };
 
+const LibraryOrdinal BuiltinOrdinals[] = {
+#include "LibraryOrdinalsData.inc"
+    {"", 0, ""},
+};
+
 const char* const BuiltinHostPatterns[] = {
 #include "HostDllsData.inc"
     "",
@@ -60,8 +65,8 @@ std::string_view KindName(ImportKind kind) {
     return "unknown";
 }
 
-LibraryMap::LibraryMap(std::vector<LibraryRoute> routes, std::vector<std::string> hostPatterns)
-    : routes_(std::move(routes)), hostPatterns_(std::move(hostPatterns)) {
+LibraryMap::LibraryMap(std::vector<LibraryRoute> routes, std::vector<std::string> hostPatterns, std::vector<LibraryOrdinal> ordinals)
+    : routes_(std::move(routes)), hostPatterns_(std::move(hostPatterns)), ordinals_(std::move(ordinals)) {
     for (LibraryRoute& route : routes_) {
         route.pattern = ToLower(route.pattern);
     }
@@ -83,7 +88,13 @@ LibraryMap LibraryMap::Builtin() {
             hosts.emplace_back(pattern);
         }
     }
-    return LibraryMap(std::move(routes), std::move(hosts));
+    std::vector<LibraryOrdinal> ordinals;
+    for (const LibraryOrdinal& ordinal : BuiltinOrdinals) {
+        if (ordinal.ordinal != 0) {
+            ordinals.push_back(ordinal);
+        }
+    }
+    return LibraryMap(std::move(routes), std::move(hosts), std::move(ordinals));
 }
 
 void LibraryMap::SetBundled(std::vector<std::string> dllNames) {
@@ -109,6 +120,15 @@ Resolution LibraryMap::Resolve(std::string_view dll) const {
         }
     }
     return {ImportKind::Unknown, std::string(dll), {}};
+}
+
+std::optional<std::string> LibraryMap::OrdinalName(std::string_view library, std::uint16_t ordinal) const {
+    for (const LibraryOrdinal& entry : ordinals_) {
+        if (entry.library == library && entry.ordinal == ordinal) {
+            return entry.name;
+        }
+    }
+    return std::nullopt;
 }
 
 }
