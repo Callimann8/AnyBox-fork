@@ -34,4 +34,4 @@ ctest --test-dir build --output-on-failure
 
 ## After adding a library
 
-The routing table and the library list are read at configure time. Re-run the `cmake -S . -B build` step after you add a folder under `core/libs/xdll` or edit an `Imports.txt`. `CONFIGURE_DEPENDS` makes the build re-run it automatically in most generators.
+The routing table and the library list are read at configure time. Re-run the `cmake -S . -B build` step after you add a folder under `core/libs/xdll` or edit an `Imports.txt` or `Ordinals.txt`. `CONFIGURE_DEPENDS` makes the build re-run it automatically in most generators.
