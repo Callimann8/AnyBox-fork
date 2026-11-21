@@ -134,9 +134,6 @@ def main():
         assert f"device type {device} packaged 0" in run.stdout, run.stdout
 
     report_path = out / "anybox-report.json"
-    if kind == "crash" and not report_path.exists():
-        print("SKIP crash report check: no report written (see docs/dev/debt/runtime.md)")
-        return
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["format"] == "anybox-report" and report["version"] == 1
     assert report["stop"]["kind"] == kind, report["stop"]

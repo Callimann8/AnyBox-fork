@@ -270,6 +270,8 @@ void Emit(const std::string& line) {
     }
 }
 
+std::atomic<LPTOP_LEVEL_EXCEPTION_FILTER> g_previousFilter{};
+
 LONG WINAPI UnhandledException(EXCEPTION_POINTERS* pointers) {
     const EXCEPTION_RECORD* record = pointers != nullptr ? pointers->ExceptionRecord : nullptr;
     AbxStop stop{};
@@ -283,6 +285,15 @@ LONG WINAPI UnhandledException(EXCEPTION_POINTERS* pointers) {
         }
     }
     AbxWriteReport(&stop);
+    const LPTOP_LEVEL_EXCEPTION_FILTER previous = g_previousFilter.load();
+    return previous != nullptr ? previous(pointers) : EXCEPTION_CONTINUE_SEARCH;
+}
+
+LONG WINAPI KeepFilter(EXCEPTION_POINTERS*) {
+    const LPTOP_LEVEL_EXCEPTION_FILTER previous = SetUnhandledExceptionFilter(UnhandledException);
+    if (previous != UnhandledException) {
+        g_previousFilter.store(previous);
+    }
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -293,6 +304,7 @@ void Start() {
         g_logFile = std::fopen(logPath.c_str(), "a");
     }
     SetUnhandledExceptionFilter(UnhandledException);
+    AddVectoredExceptionHandler(0, KeepFilter);
 }
 
 }
