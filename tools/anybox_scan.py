@@ -11,6 +11,7 @@ STUB_CALL = re.compile(r"\bAbxNotImplemented\s*\(")
 DEFINITION = re.compile(r"\bABX_API\s+[\w:<>*&\s]*?\b(\w+)\s*\(([^;{}]*)\)\s*(?:noexcept\s*)?\{")
 DECLARATION = re.compile(r"\bABX_API\s+[\w:<>*&\s]*?\b(\w+)\s*\(([^;{}]*)\)\s*(?:noexcept\s*)?;")
 FORWARD = re.compile(r"^\s*(\w+)\s*=\s*([\w.-]+)\.(#?\w+)\s*$")
+ORDINAL = re.compile(r"^\s*([A-Za-z_]\w*)\s+@([1-9]\d*)\s*$")
 TOKEN = re.compile(
     r'(?P<raw>R"(?P<delim>[^(\s]{0,16})\((?:.|\n)*?\)(?P=delim)")'
     r'|(?P<string>"(?:\\.|[^"\\\n])*")'
@@ -30,6 +31,7 @@ class Library:
     forwarded: dict = field(default_factory=dict)
     declarations: dict = field(default_factory=dict)
     definitions: dict = field(default_factory=dict)
+    ordinals: dict = field(default_factory=dict)
 
     @property
     def declared(self):
@@ -40,6 +42,8 @@ class Library:
         return len(self.implemented) + len(self.forwarded)
 
     def status(self, name):
+        if name.startswith("#") and name[1:].isdigit() and int(name[1:]) in self.ordinals:
+            name = self.ordinals[int(name[1:])]
         if name in self.implemented:
             return "implemented"
         if name in self.forwarded:
@@ -109,6 +113,11 @@ def scan_library(source, name):
                 match = FORWARD.match(line)
                 if match:
                     library.forwarded[match.group(1)] = f"{match.group(2)}.{match.group(3)}"
+        elif relative == "Ordinals.txt":
+            for line in source.read(path).splitlines():
+                match = ORDINAL.match(line)
+                if match:
+                    library.ordinals[int(match.group(2))] = match.group(1)
         elif path.endswith(SOURCE_SUFFIXES):
             text = strip(source.read(path))
             for match in DECLARATION.finditer(text):
