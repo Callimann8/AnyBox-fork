@@ -53,3 +53,19 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  refresh-readme:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Purge the README images from GitHub's image cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 30
+          gh api "repos/$GITHUB_REPOSITORY/readme" -H "Accept: application/vnd.github.html" \
+            | grep -o 'https://camo\.githubusercontent\.com/[0-9a-f/]*' | sort -u \
+            | while read -r url; do
+                curl -s -o /dev/null -w "%{http_code} $url\n" -X PURGE "$url" || true
+              done
