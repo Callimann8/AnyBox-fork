@@ -262,13 +262,28 @@ def name_list(names, label, open_up_to=12):
     return f'<details{state}><summary>{len(names)} {escape(label)}</summary><ol class="names">{items}</ol></details>'
 
 
+STATUS_TAGS = (("implemented", "implementedNames", "done"), ("forwarded", "forwardedNames", "forwarded"),
+               ("stub", "stubNames", "stub"), ("not declared", "missingNames", "missing"))
+
+
+def function_list(row, open_up_to=12):
+    entries = sorted(((name, label, css) for label, key, css in STATUS_TAGS for name in row.get(key, [])), key=lambda entry: entry[0].lower())
+    if not entries:
+        return ""
+    counts = [plural(len(row[key]), "stub") if label == "stub" else f"{len(row[key])} {label}" for label, key, _ in STATUS_TAGS if row.get(key)]
+    items = "".join(f'<li><span class="tag {css}">{label}</span><code>{escape(name)}</code></li>' for name, label, css in entries)
+    state = " open" if len(entries) <= open_up_to else ""
+    return (f'<details{state}><summary>{plural(len(entries), "function")}: {", ".join(counts)}</summary>'
+            f'<ol class="names">{items}</ol></details>')
+
+
 def page(data):
     totals = data["totals"]
     rows = []
     for row in sorted(data["libraries"], key=lambda row: row["name"]):
         link = f'{SOURCE}/{anybox_scan.XDLL}/{row["name"]}'
         debt = f'{SOURCE}/docs/dev/debt/{row["name"]}.md'
-        lists = name_list(row["stubNames"], "stubs") + name_list(row.get("missingNames", []), "not declared yet")
+        lists = function_list(row)
         missing = row.get("missing", 0)
         known = row.get("known", row["declared"])
         share = row.get("knownPercent", row["percent"])
@@ -299,7 +314,9 @@ th,td{{border-bottom:1px solid #30363d;padding:6px;text-align:left;vertical-alig
 .bar{{display:inline-block;width:90px;height:8px;background:{TODO};margin-right:6px}}
 .bar span{{display:block;height:8px;background:{DONE}}} .stubs{{color:#8b949e;font-size:12px;min-width:280px}}
 summary{{cursor:pointer;color:#58a6ff}} ol.names{{margin:4px 0 8px;padding-left:2.6em;max-height:420px;overflow-y:auto}}
-ol.names li{{line-height:1.6}} ol.names code{{color:#e6edf3;font-size:12px}}
+ol.names li{{line-height:1.7}} ol.names code{{color:#e6edf3;font-size:12px}}
+.tag{{display:inline-block;width:86px;margin-right:8px;padding:0 6px;border-radius:9px;font-size:11px;text-align:center;color:#fff}}
+.tag.done{{background:{DONE}}} .tag.forwarded{{background:{FORWARDED}}} .tag.stub{{background:{TODO}}} .tag.missing{{background:{MISSING};border:1px solid #484f58}}
 .wrap{{overflow-x:auto}} img{{max-width:100%}} .note{{color:#8b949e;font-size:12px}}
 </style></head><body>
 <h1>AnyBox progress</h1>
@@ -308,7 +325,7 @@ ol.names li{{line-height:1.6}} ol.names code{{color:#e6edf3;font-size:12px}}
 <p>Counted from the source: a function is a stub while its body calls <code>AbxNotImplemented</code>. Known functions come from the export inventories in <code>docs/inventory</code> and the title needs records in <code>docs/needs</code>; a library marked as not known yet has no inventory, so its count grows as titles are audited. A count says nothing about whether a title runs.
 Compatibility lives in the <a href="https://github.com/{REPOSITORY}/discussions/categories/game-bring-up">Game bring-up</a> discussions; pick a stub to work on from the table.</p>
 <p><img src="progress.svg" alt="progress map"></p>
-<div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Not declared</th><th>Known</th><th>Done</th><th>Known gaps</th><th>Functions to pick up</th></tr></thead>
+<div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Not declared</th><th>Known</th><th>Done</th><th>Known gaps</th><th>Functions</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
 {unserved_html}<p><a href="needs.html">What titles still need</a> · <a href="history.html">Progress history</a> · commit {escape(data["commit"] or "unknown")}</p>
 </body></html>

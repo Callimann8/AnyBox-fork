@@ -111,7 +111,11 @@ class ScanTest(unittest.TestCase):
     def test_outputs_render(self):
         data = progress.snapshot(anybox_scan.scan(self.source), "0" * 40)
         self.assertIn("<svg", progress.progress_map(data))
-        self.assertIn("<li><code>Pending</code></li>", progress.page(data))
+        rendered = progress.page(data)
+        self.assertIn('<span class="tag stub">stub</span><code>Pending</code>', rendered)
+        self.assertIn('<span class="tag done">implemented</span><code>Done</code>', rendered)
+        self.assertIn('<span class="tag forwarded">forwarded</span><code>Tick</code>', rendered)
+        self.assertIn("<summary>4 functions: 2 implemented, 1 forwarded, 1 stub</summary>", rendered)
         self.assertEqual(progress.name_list([], "stubs"), "")
         self.assertIn("<details open><summary>2 stubs</summary>", progress.name_list(["A", "B"], "stubs"))
         self.assertIn("<details><summary>13 stubs</summary>", progress.name_list([str(n) for n in range(13)], "stubs"))
