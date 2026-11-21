@@ -51,6 +51,11 @@ class ShaderScanTest(unittest.TestCase):
         path = self.write("cut.cso", container([(b"DXIL", b"\1" * 12)])[:-4])
         self.assertEqual(shader_scan.scan_file(path), [])
 
+    def test_rejects_part_inside_header(self):
+        data = bytearray(container([(b"DXIL", b"\1" * 12)]))
+        data[32:36] = b"\0\0\0\0"
+        self.assertEqual(shader_scan.scan_file(self.write("bad.cso", bytes(data))), [])
+
     def test_summarizes_a_folder(self):
         self.write("a.cso", container([(b"SHEX", b"\1" * 4)]))
         self.write("sub/b.cso", container([(b"DXIL", b"\1" * 4), (b"XHW0", b"")]))

@@ -21,7 +21,7 @@ def container_at(data, offset):
     parts = []
     for index in range(count):
         part = struct.unpack_from("<I", data, offset + HEADER + index * 4)[0]
-        if part + 8 > size:
+        if part < HEADER + count * 4 or part + 8 > size:
             return None
         fourcc = bytes(data[offset + part:offset + part + 4])
         length = struct.unpack_from("<I", data, offset + part + 4)[0]
