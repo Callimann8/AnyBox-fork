@@ -354,7 +354,7 @@ ABX_API HRESULT XStoreUnregisterPackageLicenseLost();
 ABX_API HRESULT XSystemAllowFullDownloadBandwidth();
 ABX_API HRESULT XSystemGetAnalyticsInfo();
 ABX_API HRESULT XSystemGetRuntimeInfo();
-ABX_API HRESULT XSystemGetXboxLiveSandboxId();
+ABX_API HRESULT XSystemGetXboxLiveSandboxId(std::size_t sandboxIdSize, char* sandboxId, std::size_t* sandboxIdUsed);
 ABX_API HRESULT XSystemHandleTrack();
 ABX_API HRESULT XSystemIsHandleValid();
 ABX_API HRESULT XUserAddByIdWithUiAsync();

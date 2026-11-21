@@ -324,7 +324,6 @@ ABX_API HRESULT XStoreUnregisterPackageLicenseLost() { AbxNotImplemented(__func_
 ABX_API HRESULT XSystemAllowFullDownloadBandwidth() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAnalyticsInfo() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetRuntimeInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetXboxLiveSandboxId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemHandleTrack() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemIsHandleValid() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserAddByIdWithUiAsync() { AbxNotImplemented(__func__); }

@@ -25,4 +25,5 @@ __declspec(dllexport) HRESULT XAsyncGetResult(void*, const void*, std::size_t, v
 __declspec(dllexport) HRESULT XUserAddAsync() { return E_FAIL; }
 __declspec(dllexport) std::uint32_t XSystemGetDeviceType() { return 0xffffffffu; }
 __declspec(dllexport) bool XPackageIsPackagedProcess() { return true; }
+__declspec(dllexport) HRESULT XSystemGetXboxLiveSandboxId(std::size_t, char*, std::size_t*) { return E_FAIL; }
 }
