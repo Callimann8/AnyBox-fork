@@ -1,5 +1,6 @@
 #include "xdll/xgameruntime/xgameruntime.hpp"
 
+#include <atomic>
 #include <cstring>
 #include <functional>
 #include <initializer_list>
@@ -31,7 +32,7 @@ struct XGameSaveUpdate {
     std::string displayName;
     bool keepDisplayName = false;
     std::vector<Change> changes;
-    bool submitted = false;
+    std::atomic<bool> submitted{false};
 };
 
 namespace {
@@ -276,7 +277,7 @@ HRESULT Store(const std::wstring& root, const std::wstring& path, const Stored& 
     return S_OK;
 }
 
-HRESULT LoadAll(const std::wstring& root, std::vector<Stored>& all, const char* function) {
+HRESULT ForEachContainer(const std::wstring& root, const std::function<HRESULT(const std::wstring&)>& visit) {
     WIN32_FIND_DATAW found;
     HANDLE search = FindFirstFileW((root + L"\\*" + Extension).c_str(), &found);
     if (search == INVALID_HANDLE_VALUE) {
@@ -290,15 +291,74 @@ HRESULT LoadAll(const std::wstring& root, std::vector<Stored>& all, const char* 
         if ((found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || file.size() <= extension || file.compare(file.size() - extension, extension, Extension) != 0) {
             continue;
         }
-        Stored stored;
-        bool exists = false;
-        result = Load(root + L"\\" + file, stored, exists, function);
-        if (exists) {
-            all.push_back(std::move(stored));
-        }
+        result = visit(root + L"\\" + file);
     } while (SUCCEEDED(result) && FindNextFileW(search, &found));
     FindClose(search);
     return result;
+}
+
+HRESULT LoadAll(const std::wstring& root, std::vector<Stored>& all, const char* function) {
+    return ForEachContainer(root, [&](const std::wstring& path) {
+        Stored stored;
+        bool exists = false;
+        const HRESULT result = Load(path, stored, exists, function);
+        if (exists) {
+            all.push_back(std::move(stored));
+        }
+        return result;
+    });
+}
+
+HRESULT StoredBlobBytes(const std::wstring& path, std::uint64_t& total, const char* function) {
+    HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) {
+        const DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND ? S_OK : FromWin32(error);
+    }
+    LARGE_INTEGER size{};
+    std::uint64_t offset = 0;
+    DWORD error = ERROR_SUCCESS;
+    const auto u32 = [&](std::uint32_t& value) {
+        DWORD done = 0;
+        if (!ReadFile(file, &value, sizeof(value), &done, nullptr)) {
+            error = GetLastError();
+            return false;
+        }
+        offset += done;
+        return done == sizeof(value);
+    };
+    const auto skip = [&](std::uint32_t count) {
+        LARGE_INTEGER move{};
+        move.QuadPart = count;
+        if (!SetFilePointerEx(file, move, nullptr, FILE_CURRENT)) {
+            error = GetLastError();
+            return false;
+        }
+        offset += count;
+        return offset <= static_cast<std::uint64_t>(size.QuadPart);
+    };
+    std::uint32_t magic = 0;
+    std::uint32_t version = 0;
+    std::uint32_t length = 0;
+    std::uint32_t count = 0;
+    std::uint64_t bytes = 0;
+    if (!GetFileSizeEx(file, &size)) {
+        error = GetLastError();
+    }
+    bool valid = error == ERROR_SUCCESS && u32(magic) && magic == FileMagic && u32(version) && version == FileVersion && u32(length) && skip(length) && u32(length) && skip(length) && u32(count);
+    for (std::uint32_t i = 0; valid && i < count; ++i) {
+        valid = u32(length) && skip(length) && u32(length) && skip(length);
+        bytes += length;
+    }
+    CloseHandle(file);
+    if (error != ERROR_SUCCESS) {
+        return FromWin32(error);
+    }
+    if (!valid || offset != static_cast<std::uint64_t>(size.QuadPart)) {
+        AbxUnsupported(function, "a file in the XGameSave folder is not a save container written by AnyBox");
+    }
+    total += bytes;
+    return S_OK;
 }
 
 std::uint64_t BlobBytes(const Stored& stored) {
@@ -310,12 +370,9 @@ std::uint64_t BlobBytes(const Stored& stored) {
 }
 
 HRESULT Used(const std::wstring& root, std::int64_t& used, const char* function) {
-    std::vector<Stored> all;
-    const HRESULT result = LoadAll(root, all, function);
-    used = 0;
-    for (const Stored& stored : all) {
-        used += static_cast<std::int64_t>(BlobBytes(stored));
-    }
+    std::uint64_t total = 0;
+    const HRESULT result = ForEachContainer(root, [&](const std::wstring& path) { return StoredBlobBytes(path, total, function); });
+    used = static_cast<std::int64_t>(total);
     return result;
 }
 
@@ -473,11 +530,7 @@ HRESULT SubmitUpdate(XGameSaveUpdateHandle update, const char* function) {
     if (used - static_cast<std::int64_t>(before) + static_cast<std::int64_t>(BlobBytes(stored)) > Quota) {
         return QuotaExceeded;
     }
-    result = Store(update->root, path, stored);
-    if (SUCCEEDED(result)) {
-        update->submitted = true;
-    }
-    return result;
+    return Store(update->root, path, stored);
 }
 
 HRESULT ContainerInfo(XGameSaveProviderHandle provider, const char* name, const char* prefix, void* context, XGameSaveContainerInfoCallback* callback, const char* function) {
@@ -834,22 +887,37 @@ ABX_API HRESULT XGameSaveSubmitUpdate(XGameSaveUpdateHandle updateContext) {
     if (updateContext == nullptr) {
         return E_INVALIDARG;
     }
-    if (updateContext->submitted) {
+    if (updateContext->submitted.exchange(true)) {
         return HandleExpired;
     }
-    return SubmitUpdate(updateContext, __func__);
+    const HRESULT result = SubmitUpdate(updateContext, __func__);
+    if (FAILED(result)) {
+        updateContext->submitted = false;
+    }
+    return result;
 }
 
 ABX_API HRESULT XGameSaveSubmitUpdateAsync(XGameSaveUpdateHandle updateContext, XAsyncBlock* async) {
     if (updateContext == nullptr) {
         return E_INVALIDARG;
     }
-    if (updateContext->submitted) {
+    if (async == nullptr) {
+        return E_INVALIDARG;
+    }
+    if (updateContext->submitted.exchange(true)) {
         return HandleExpired;
     }
-    return Start(async, reinterpret_cast<const void*>(&XGameSaveSubmitUpdateAsync), __func__, [updateContext](Operation&) {
-        return SubmitUpdate(updateContext, "XGameSaveSubmitUpdateAsync");
+    const HRESULT begun = Start(async, reinterpret_cast<const void*>(&XGameSaveSubmitUpdateAsync), __func__, [updateContext](Operation&) {
+        const HRESULT result = SubmitUpdate(updateContext, "XGameSaveSubmitUpdateAsync");
+        if (FAILED(result)) {
+            updateContext->submitted = false;
+        }
+        return result;
     });
+    if (FAILED(begun)) {
+        updateContext->submitted = false;
+    }
+    return begun;
 }
 
 ABX_API HRESULT XGameSaveSubmitUpdateResult(XAsyncBlock* async) {
