@@ -1,7 +1,5 @@
 #include "xdll/xgameruntime/xgameruntime.hpp"
 
-ABX_API HRESULT XGameRuntimeInitializeWithOptions() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameRuntimeIsFeatureAvailable() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueCreateComposite() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueGetPort() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueRegisterMonitor() { AbxNotImplemented(__func__); }
@@ -30,12 +28,8 @@ ABX_API HRESULT XGameSaveSubmitBlobWrite() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveSubmitUpdate() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveReadBlobData() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveGetRemainingQuota() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetConsoleId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAppSpecificDeviceId() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadIsTimeSensitive() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadSetTimeSensitive() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadAssertNotTimeSensitive() { AbxNotImplemented(__func__); }
 
 ABX_API HRESULT XAppBroadcastGetStatus() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XAppBroadcastIsAppBroadcasting() { AbxNotImplemented(__func__); }

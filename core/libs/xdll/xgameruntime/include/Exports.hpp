@@ -4,6 +4,8 @@
 #include "xdll/xgameruntime/include/Types.hpp"
 
 ABX_API HRESULT XGameRuntimeInitialize();
+ABX_API HRESULT XGameRuntimeInitializeWithOptions(const XGameRuntimeOptions* options);
+ABX_API bool XGameRuntimeIsFeatureAvailable(XGameRuntimeFeature feature);
 ABX_API void XGameRuntimeUninitialize();
 ABX_API HRESULT XGameGetXboxTitleId(std::uint32_t* titleId);
 
@@ -29,9 +31,12 @@ ABX_API HRESULT XAsyncGetResult(XAsyncBlock* asyncBlock, const void* identity, s
 
 ABX_API XSystemDeviceType XSystemGetDeviceType();
 ABX_API bool XPackageIsPackagedProcess();
+ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier(std::size_t bufferSize, char* buffer);
 
-ABX_API HRESULT XGameRuntimeInitializeWithOptions();
-ABX_API HRESULT XGameRuntimeIsFeatureAvailable();
+ABX_API HRESULT XThreadSetTimeSensitive(bool isTimeSensitiveThread);
+ABX_API bool XThreadIsTimeSensitive();
+ABX_API void XThreadAssertNotTimeSensitive();
+
 ABX_API HRESULT XTaskQueueCreateComposite();
 ABX_API HRESULT XTaskQueueGetPort();
 ABX_API HRESULT XTaskQueueRegisterMonitor();
@@ -60,12 +65,8 @@ ABX_API HRESULT XGameSaveSubmitBlobWrite();
 ABX_API HRESULT XGameSaveSubmitUpdate();
 ABX_API HRESULT XGameSaveReadBlobData();
 ABX_API HRESULT XGameSaveGetRemainingQuota();
-ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier();
 ABX_API HRESULT XSystemGetConsoleId();
 ABX_API HRESULT XSystemGetAppSpecificDeviceId();
-ABX_API HRESULT XThreadIsTimeSensitive();
-ABX_API HRESULT XThreadSetTimeSensitive();
-ABX_API HRESULT XThreadAssertNotTimeSensitive();
 
 ABX_API HRESULT XAppBroadcastGetStatus();
 ABX_API HRESULT XAppBroadcastIsAppBroadcasting();

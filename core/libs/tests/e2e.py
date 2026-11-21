@@ -44,6 +44,9 @@ EXPECTED = {
     "async_null": (0xAB02, "unsupported"),
     "async_terminated": (0xAB02, "unsupported"),
     "async_begin_terminated": (0xAB02, "unsupported"),
+    "startup": (0, "none"),
+    "startup_options": (0xAB02, "unsupported"),
+    "thread_assert": (0xAB02, "unsupported"),
 }
 
 STOPPED_IN = {
@@ -54,6 +57,8 @@ STOPPED_IN = {
     "async_null": "XAsyncGetStatus",
     "async_terminated": "XAsyncComplete",
     "async_begin_terminated": "XAsyncBegin",
+    "startup_options": "XGameRuntimeInitializeWithOptions",
+    "thread_assert": "XThreadAssertNotTimeSensitive",
 }
 
 
@@ -114,6 +119,8 @@ def main():
         assert "task queue ok" in run.stdout
     if args.scenario == "async":
         assert "async ok" in run.stdout
+    if args.scenario == "startup":
+        assert "startup ok" in run.stdout
     if device is not None:
         assert f"device type {device} packaged 0" in run.stdout, run.stdout
 
