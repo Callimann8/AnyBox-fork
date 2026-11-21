@@ -47,6 +47,7 @@ __declspec(dllimport) void XTaskQueueSetCurrentProcessTaskQueue(void* queue);
 __declspec(dllimport) HRESULT XUserAddAsync();
 __declspec(dllimport) std::uint32_t XSystemGetDeviceType();
 __declspec(dllimport) bool XPackageIsPackagedProcess();
+__declspec(dllimport) HRESULT XSystemGetXboxLiveSandboxId(std::size_t sandboxIdSize, char* sandboxId, std::size_t* sandboxIdUsed);
 }
 
 namespace {
@@ -638,6 +639,16 @@ int main(int argc, char** argv) {
     }
     if (std::strcmp(scenario, "device") == 0) {
         std::printf("device type %u packaged %d\n", XSystemGetDeviceType(), XPackageIsPackagedProcess() ? 1 : 0);
+        return 0;
+    }
+    if (std::strcmp(scenario, "sandbox_id") == 0) {
+        char id[16] = {};
+        std::size_t used = 0;
+        if (XSystemGetXboxLiveSandboxId(sizeof(id) - 1, id, &used) != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) return Fail("short sandbox id buffer");
+        if (XSystemGetXboxLiveSandboxId(sizeof(id), id, &used) != S_OK || used != sizeof("RETAIL")) return Fail("sandbox id");
+        if (std::strcmp(id, "RETAIL") != 0) return Fail("sandbox id value");
+        if (XSystemGetXboxLiveSandboxId(sizeof(id), id, nullptr) != S_OK) return Fail("sandbox id without used");
+        std::printf("sandbox id ok\n");
         return 0;
     }
     if (std::strcmp(scenario, "async") == 0) {

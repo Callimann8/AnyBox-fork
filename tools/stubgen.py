@@ -44,7 +44,7 @@ def add_stubs(root, name, functions):
     wanted = []
     for function in functions:
         if function.startswith("#"):
-            print(f"skipped ordinal import {function} of {name}: record it in docs/dev/debt/{name}.md", file=sys.stderr)
+            print(f"skipped ordinal import {function} of {name}: pin it as '<Name> @{function[1:]}' in core/libs/xdll/{name}/Ordinals.txt", file=sys.stderr)
         elif not NAME.fullmatch(function):
             print(f"skipped {function!r}: not a C identifier", file=sys.stderr)
         elif function not in known and function not in wanted:

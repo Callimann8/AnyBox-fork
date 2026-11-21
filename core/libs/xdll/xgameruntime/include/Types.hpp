@@ -66,3 +66,5 @@ enum class XSystemDeviceType : std::uint32_t {
     XboxScarlettAnaconda = 0x07,
     XboxScarlettDevkit = 0x08,
 };
+
+inline constexpr std::size_t XSystemXboxLiveSandboxIdMaxBytes = 16;
