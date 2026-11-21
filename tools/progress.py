@@ -13,7 +13,9 @@ REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "Dark3581/AnyBox")
 SOURCE = f"https://github.com/{REPOSITORY}/blob/main"
 DONE, FORWARDED, TODO, MISSING = "#2ea043", "#1f6feb", "#6e7681", "#21262d"
 LEGEND = ((DONE, "implemented"), (FORWARDED, "forwarded"), (TODO, "stub"), (MISSING, "not declared"))
-MAP_COLUMNS, TILE_W, TILE_H, GAP = 6, 160, 54, 6
+PANEL_WIDTH, PANEL_GAP, MAP_HEIGHT, MAP_HEADER = 495, 10, 280, 30
+GRID_COLUMNS, GRID_ROW = 12, 23
+MAP_BACKGROUND = "#0d1117"
 
 
 def percent(done, total):
@@ -102,56 +104,154 @@ def badge(label, value, color):
     )
 
 
+def aspect(row, side):
+    total = sum(row)
+    return max(max(side * side * area / (total * total), total * total / (side * side * area)) for area in row)
+
+
+def lay_row(row, x, y, w, h, out):
+    depth = sum(row) / min(w, h)
+    offset = 0.0
+    for area in row:
+        length = area / depth
+        out.append((x, y + offset, depth, length) if w >= h else (x + offset, y, length, depth))
+        offset += length
+    return (x + depth, y, w - depth, h) if w >= h else (x, y + depth, w, h - depth)
+
+
+def squarify(sizes, x, y, w, h):
+    total = sum(sizes)
+    pending = [size * w * h / total for size in sizes]
+    out, row = [], []
+    while pending:
+        side = min(w, h)
+        if not row or aspect(row + [pending[0]], side) <= aspect(row, side):
+            row.append(pending.pop(0))
+        else:
+            x, y, w, h = lay_row(row, x, y, w, h, out)
+            row = []
+    if row:
+        lay_row(row, x, y, w, h, out)
+    return out
+
+
+def grid_cells(count, x, y, w, h):
+    if count <= 0 or w <= 0 or h <= 0:
+        return []
+    rows = max(1, min(count, round((count * h / w) ** 0.5)))
+    out = []
+    for line in range(rows):
+        across = count // rows + (line < count % rows)
+        width = w / across
+        out += [(x + column * width, y + line * h / rows, width, h / rows) for column in range(across)]
+    return out
+
+
+def map_tiles(data):
+    tiles = []
+    for row in data["libraries"]:
+        size = row.get("known", row["declared"])
+        if size:
+            marker = "" if row.get("surfaceKnown", True) else "*"
+            tiles.append({"label": row["name"] + marker, "size": size, "unserved": False,
+                          "cells": [DONE] * row["implemented"] + [FORWARDED] * row["forwarded"] + [TODO] * row["stub"] + [MISSING] * row.get("missing", 0),
+                          "tooltip": f'{row["name"]}: {row["implemented"]} implemented, {row["forwarded"]} forwarded, {row["stub"]} stubs, {row.get("missing", 0)} not declared'})
+    for row in data.get("unserved", []):
+        if row["missing"]:
+            tiles.append({"label": row["dll"], "size": row["missing"], "unserved": True, "cells": [MISSING] * row["missing"],
+                          "tooltip": f'{row["dll"]}: no AnyBox library, {row["missing"]} known functions, needed by {row["titles"]} titles'})
+    return sorted(tiles, key=lambda tile: (-tile["size"], tile["label"]))
+
+
+def tile_done(tiles):
+    return sum(cell in (DONE, FORWARDED) for tile in tiles for cell in tile["cells"]), sum(tile["size"] for tile in tiles)
+
+
+def fitting_label(label, w, h):
+    room = int((w - 10) / 7)
+    if h <= 22 or room < 3:
+        return ""
+    return label if len(label) <= room else label[:room - 1] + "…"
+
+
+def readable_panel(tiles, width):
+    shown = list(tiles)
+    while len(shown) > 1:
+        boxes = squarify([tile["size"] for tile in shown], 0, 0, width, MAP_HEIGHT)
+        if all(fitting_label(tile["label"], w, h) == tile["label"] for tile, (_, _, w, h) in zip(shown, boxes)):
+            break
+        shown.pop()
+    return shown
+
+
+def svg_rect(x, y, w, h, fill, stroke=MAP_BACKGROUND, width=0.5, dash=""):
+    dashes = f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<rect x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" fill="{fill}" stroke="{stroke}" stroke-width="{width}"{dashes}/>'
+
+
+def svg_text(x, y, value, size, color="#fff"):
+    return (f'<text x="{x:.2f}" y="{y:.2f}" font-family="Verdana,DejaVu Sans,sans-serif" font-size="{size}" fill="{color}" '
+            f'stroke="{MAP_BACKGROUND}" stroke-width="3" paint-order="stroke">{escape(value)}</text>')
+
+
+def draw_tile(tile, x, y, w, h):
+    parts = [f'<g><title>{escape(tile["tooltip"])}</title>']
+    parts += [svg_rect(*cell, color) for cell, color in zip(grid_cells(len(tile["cells"]), x + 1, y + 1, w - 2, h - 2), tile["cells"])]
+    if tile["unserved"]:
+        parts.append(svg_rect(x + 1, y + 1, w - 2, h - 2, "none", "#f85149", 2, "5 3"))
+    else:
+        parts.append(svg_rect(x, y, w, h, "none", MAP_BACKGROUND, 2))
+    label = fitting_label(tile["label"], w, h)
+    if label:
+        parts.append(svg_text(x + 5, y + 16, label, 12))
+    return parts + ["</g>"]
+
+
+def panel_heading(title, tiles, x, y):
+    done, total = tile_done(tiles)
+    return svg_text(x + 4, y + 21, f"{title}: {percent(done, total)}% ({done}/{total})", 15)
+
+
 def progress_map(data):
-    rows = sorted(data["libraries"], key=lambda row: (-row.get("known", row["declared"]), row["name"]))
-    unserved = data.get("unserved", [])
-    count = max(len(rows) + len(unserved), 1)
-    columns = min(MAP_COLUMNS, count)
-    lines = (count + columns - 1) // columns
-    width = max(columns * (TILE_W + GAP) + GAP, 620)
-    top = 46
-    height = lines * (TILE_H + GAP) + GAP + top
+    tiles = map_tiles(data)
+    full = 2 * PANEL_WIDTH + PANEL_GAP
+    rest, panels = list(tiles), []
+    while rest and len(panels) < 2:
+        shown = readable_panel(rest, PANEL_WIDTH if len(rest) > 1 else full)
+        panels.append(shown)
+        rest = rest[len(shown):]
     totals = data["totals"]
     done = totals["implemented"] + totals["forwarded"]
-    heading = f'AnyBox libraries: {done}/{totals.get("known", totals["declared"])} known functions done ({totals.get("knownPercent", totals["percent"])}%)'
-    if unserved:
-        heading += f', {plural(len(unserved), "DLL")} with no library'
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" font-family="Verdana,DejaVu Sans,sans-serif">',
-             f'<rect width="{width}" height="{height}" fill="#0d1117"/>',
-             f'<text x="{GAP}" y="17" fill="#fff" font-size="13">{escape(heading)}</text>']
-    x = GAP
+    known = totals.get("known", totals["declared"])
+    heading = f'AnyBox libraries*: {totals.get("knownPercent", totals["percent"])}% ({done}/{known})'
+    if data.get("unserved"):
+        heading += f', {plural(len(data["unserved"]), "DLL")} with no library'
+    body = [svg_text(4, 21, heading, 16)]
+    x = 6
     for color, label in LEGEND:
-        parts.append(f'<rect x="{x}" y="27" width="10" height="10" fill="{color}" stroke="#8b949e" stroke-width="0.5"/>')
-        parts.append(f'<text x="{x + 14}" y="36" fill="#8b949e" font-size="10">{label}</text>')
+        body.append(svg_rect(x, 31, 10, 10, color, "#8b949e", 0.5))
+        body.append(svg_text(x + 14, 40, label, 10, "#c9d1d9"))
         x += 14 + 7 * len(label) + 12
-    parts.append(f'<text x="{x}" y="36" fill="#8b949e" font-size="10">* full export list not known yet</text>')
-    for index, row in enumerate(rows):
-        x = GAP + (index % columns) * (TILE_W + GAP)
-        y = top + GAP + (index // columns) * (TILE_H + GAP)
-        known = row.get("known", row["declared"])
-        total = max(known, 1)
-        offset = x
-        tooltip = f'{row["name"]}: {row["implemented"]} implemented, {row["forwarded"]} forwarded, {row["stub"]} stubs, {row.get("missing", 0)} not declared'
-        parts.append(f'<g><title>{escape(tooltip)}</title>')
-        parts.append(f'<rect x="{x}" y="{y}" width="{TILE_W}" height="{TILE_H}" fill="{MISSING}" stroke="#30363d"/>')
-        for color, value in ((DONE, row["implemented"]), (FORWARDED, row["forwarded"]), (TODO, row["stub"])):
-            segment = TILE_W * value / total
-            parts.append(f'<rect x="{offset:.1f}" y="{y}" width="{segment:.1f}" height="{TILE_H}" fill="{color}"/>')
-            offset += segment
-        marker = "" if row.get("surfaceKnown", True) else " *"
-        parts.append(f'<text x="{x + 6}" y="{y + 20}" fill="#fff" font-size="12">{escape(row["name"])}{marker}</text>')
-        parts.append(f'<text x="{x + 6}" y="{y + 40}" fill="#fff" font-size="11">{row["implemented"] + row["forwarded"]}/{known} done</text></g>')
-    for index, row in enumerate(unserved, start=len(rows)):
-        x = GAP + (index % columns) * (TILE_W + GAP)
-        y = top + GAP + (index // columns) * (TILE_H + GAP)
-        name = row["dll"] if len(row["dll"]) <= 22 else row["dll"][:21] + "…"
-        tooltip = f'{row["dll"]}: no AnyBox library, {row["missing"]} known functions, needed by {row["titles"]} titles'
-        parts.append(f'<g><title>{escape(tooltip)}</title>')
-        parts.append(f'<rect x="{x + 0.5}" y="{y + 0.5}" width="{TILE_W - 1}" height="{TILE_H - 1}" fill="{MISSING}" stroke="#f85149" stroke-dasharray="4 3"/>')
-        parts.append(f'<text x="{x + 6}" y="{y + 20}" fill="#fff" font-size="12">{escape(name)}</text>')
-        parts.append(f'<text x="{x + 6}" y="{y + 40}" fill="#f85149" font-size="11">no library, 0/{row["missing"]}</text></g>')
-    parts.append("</svg>\n")
-    return "\n".join(parts)
+    body.append(svg_text(x, 40, "* full export list not known yet", 10, "#c9d1d9"))
+    top = MAP_HEADER + 18
+    titles = ("Large libraries", "Medium libraries", "Small libraries")
+    width_each = full if len(panels) == 1 else PANEL_WIDTH
+    for index, shown in enumerate(panels):
+        left = index * (PANEL_WIDTH + PANEL_GAP)
+        body.append(panel_heading(titles[index] if len(panels) > 1 or rest else "Libraries", shown, left, top))
+        for tile, box in zip(shown, squarify([tile["size"] for tile in shown], left, top + MAP_HEADER, width_each, MAP_HEIGHT)):
+            body += draw_tile(tile, *box)
+    height = top + (MAP_HEADER + MAP_HEIGHT if panels else 0)
+    if rest:
+        cell_w = full / GRID_COLUMNS
+        top = height + 10
+        body.append(panel_heading(titles[2], rest, 0, top))
+        for index, tile in enumerate(sorted(rest, key=lambda tile: tile["label"].lower())):
+            body += draw_tile(tile, index % GRID_COLUMNS * cell_w, top + MAP_HEADER + index // GRID_COLUMNS * GRID_ROW, cell_w, GRID_ROW)
+        height = top + MAP_HEADER + -(-len(rest) // GRID_COLUMNS) * GRID_ROW
+    height += 6
+    return "\n".join([f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {full} {height}" width="{full}" height="{height}">',
+                      svg_rect(0, 0, full, height, MAP_BACKGROUND, MAP_BACKGROUND, 0), *body, "</svg>"]) + "\n"
 
 
 def page(data):

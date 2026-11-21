@@ -90,9 +90,23 @@ class ScanTest(unittest.TestCase):
         self.assertEqual(data["unserved"], [{"dll": "absent.dll", "missing": 2, "titles": 2, "missingNames": ["A", "B"]}])
         self.assertEqual((data["totals"]["missing"], data["totals"]["known"], data["totals"]["unservedDlls"]), (3, 8, 1))
         self.assertEqual(data["totals"]["knownPercent"], 37.5)
-        self.assertIn("no library, 0/2", progress.progress_map(data))
+        drawn = progress.progress_map(data)
+        self.assertIn("absent.dll: no AnyBox library, 2 known functions, needed by 2 titles", drawn)
+        self.assertIn('stroke-dasharray="5 3"', drawn)
+        self.assertIn("other*", drawn)
+        self.assertEqual(drawn.count(f'fill="{progress.MISSING}"'), 1 + 3)
         self.assertIn("--new-library absent --dll absent.dll", progress.page(data))
         self.assertIn("1 DLL with no library", progress.page(data))
+
+    def test_treemap_layout(self):
+        boxes = progress.squarify([6, 3, 1], 0, 0, 100, 50)
+        self.assertAlmostEqual(sum(w * h for _, _, w, h in boxes), 5000)
+        for (x, y, w, h), size in zip(boxes, [6, 3, 1]):
+            self.assertAlmostEqual(w * h, 500 * size)
+            self.assertTrue(0 <= x and x + w <= 100.001 and 0 <= y and y + h <= 50.001)
+        cells = progress.grid_cells(7, 0, 0, 70, 20)
+        self.assertEqual(len(cells), 7)
+        self.assertAlmostEqual(sum(w * h for _, _, w, h in cells), 1400)
 
     def test_outputs_render(self):
         data = progress.snapshot(anybox_scan.scan(self.source), "0" * 40)
