@@ -47,7 +47,18 @@ __declspec(dllimport) void XTaskQueueSetCurrentProcessTaskQueue(void* queue);
 __declspec(dllimport) HRESULT XUserAddAsync();
 __declspec(dllimport) std::uint32_t XSystemGetDeviceType();
 __declspec(dllimport) bool XPackageIsPackagedProcess();
+__declspec(dllimport) HRESULT XGameRuntimeInitializeWithOptions(const void* options);
+__declspec(dllimport) bool XGameRuntimeIsFeatureAvailable(std::uint32_t feature);
+__declspec(dllimport) HRESULT XPackageGetCurrentProcessPackageIdentifier(std::size_t bufferSize, char* buffer);
+__declspec(dllimport) HRESULT XThreadSetTimeSensitive(bool isTimeSensitiveThread);
+__declspec(dllimport) bool XThreadIsTimeSensitive();
+__declspec(dllimport) void XThreadAssertNotTimeSensitive();
 }
+
+struct RuntimeOptions {
+    std::uint32_t gameConfigSource;
+    const char* gameConfig;
+};
 
 namespace {
 
@@ -628,6 +639,26 @@ int AsyncTerminated(bool beforeBegin) {
     return Fail("terminate with a call in flight returned");
 }
 
+int Startup() {
+    const RuntimeOptions defaults{0, nullptr};
+    if (XGameRuntimeInitializeWithOptions(&defaults) != S_OK) return Fail("initialize with default options");
+    for (std::uint32_t feature = 0; feature <= 21; ++feature) {
+        if (!XGameRuntimeIsFeatureAvailable(feature)) return Fail("known feature reported unavailable");
+    }
+    if (XGameRuntimeIsFeatureAvailable(22) || XGameRuntimeIsFeatureAvailable(0xffffffffu)) return Fail("unknown feature reported available");
+    if (XThreadIsTimeSensitive()) return Fail("thread starts time-sensitive");
+    if (XThreadSetTimeSensitive(true) != S_OK || !XThreadIsTimeSensitive()) return Fail("set time-sensitive");
+    bool other = true;
+    std::thread([&] { other = XThreadIsTimeSensitive(); }).join();
+    if (other) return Fail("time-sensitive flag leaked to another thread");
+    if (XThreadSetTimeSensitive(false) != S_OK || XThreadIsTimeSensitive()) return Fail("clear time-sensitive");
+    XThreadAssertNotTimeSensitive();
+    char identifier[64] = {};
+    if (XPackageGetCurrentProcessPackageIdentifier(sizeof(identifier), identifier) != static_cast<HRESULT>(0x89245200u)) return Fail("package identifier of an unpackaged process");
+    std::printf("startup ok\n");
+    return 0;
+}
+
 }
 
 int main(int argc, char** argv) {
@@ -652,6 +683,19 @@ int main(int argc, char** argv) {
     }
     if (std::strcmp(scenario, "async_begin_terminated") == 0) {
         return AsyncTerminated(true);
+    }
+    if (std::strcmp(scenario, "startup") == 0) {
+        return Startup();
+    }
+    if (std::strcmp(scenario, "startup_options") == 0) {
+        const RuntimeOptions inlineConfig{1, "<Game configVersion=\"1\"/>"};
+        XGameRuntimeInitializeWithOptions(&inlineConfig);
+        return Fail("inline config returned");
+    }
+    if (std::strcmp(scenario, "thread_assert") == 0) {
+        XThreadSetTimeSensitive(true);
+        XThreadAssertNotTimeSensitive();
+        return Fail("assert on a time-sensitive thread returned");
     }
     if (std::strcmp(scenario, "crash") == 0) {
         XGameRuntimeInitialize();

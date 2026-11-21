@@ -55,6 +55,7 @@ flowchart LR
    2. **library:** a pattern in some `core/libs/xdll/<name>/Imports.txt`. The import is renamed to `ab_<name>.dll`.
    3. **host:** a pattern in [`HostDlls.txt`](../../core/relinker/HostDlls.txt): the desktop OS provides it unchanged (API sets, the CRT, `kernel32`).
    4. **unknown:** conversion fails and names the DLL, unless `--allow-unknown`.
+   An import by ordinal from a library must be pinned in that library's `Ordinals.txt`, or conversion fails and names it.
    CMake generates the table from these files at configure time ([`cmake/LibraryMap.cmake`](../../cmake/LibraryMap.cmake)), so adding a library needs no relinker change.
 3. **Rewrite.** New DLL names go in an appended `.abximp` section, and each descriptor's name RVA is pointed at them. Descriptors, thunks and the IAT stay where they are, so code that calls through the IAT is unaffected. Bound imports are unbound (the IAT is restored from the lookup table). The Authenticode certificate is dropped, because the image no longer matches it. The subsystem becomes Windows GUI (or console with `--console`), and the checksum is recomputed.
 4. **Report.** `--registry` writes `<output>.registry.json` with every import and its route; `tools/import_audit.py` reads PE files directly for the same view against the library sources.

@@ -20,11 +20,12 @@ The [progress page](https://dark3581.github.io/AnyBox/progress.html) lists every
 
 | Library | Serves | State |
 |---|---|---|
-| [xgameruntime](core/libs/xdll/xgameruntime) | `xgameruntime.dll` | XGameRuntime init, XTaskQueue, XAsync implemented; XUser, XGameSave, XPackage, XSystem stubs |
+| [xgameruntime](core/libs/xdll/xgameruntime) | `xgameruntime.dll` | XGameRuntime init and options, XTaskQueue, XAsync, XThread implemented; XUser, XGameSave, most of XPackage and XSystem stubs |
 | [d3d12_x](core/libs/xdll/d3d12_x) | `d3d12_x.dll`, `d3d12_xs.dll` | entry points declared, all stubs: needs a D3D12.X → desktop D3D12/Vulkan layer |
 | [xaudio2](core/libs/xdll/xaudio2) | `xaudio2_9.dll` | forwarded to the host's XAudio2 |
 | [gameinput](core/libs/xdll/gameinput) | `gameinput.dll` | forwarded to the host's GameInput |
 | [kernelx](core/libs/xdll/kernelx) | `kernelx.dll` | Win32 subset forwarded to `kernel32` |
+| [xmem](core/libs/xdll/xmem) | `xmem.dll` | entry points declared, all stubs: needs the `XALLOC_ATTRIBUTES` layout |
 
 Unsupported or unexpected states stop the process with a [run report](docs/run-report.schema.json) (`anybox-report.json`) that names the library and function. Nothing returns a made-up success.
 
