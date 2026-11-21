@@ -24,9 +24,9 @@ def plural(count, noun):
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
-def commit():
+def commit(root=None):
     try:
-        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=anybox_scan.ROOT, capture_output=True, text=True, check=True).stdout.strip() or None
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=root or anybox_scan.ROOT, capture_output=True, text=True, check=True).stdout.strip() or None
     except (OSError, subprocess.CalledProcessError):
         return None
 
@@ -206,37 +206,78 @@ Compatibility lives in the <a href="https://github.com/{REPOSITORY}/discussions/
 """
 
 
+def number(value, digits):
+    text = f"{value:.{digits}f}".rstrip("0").rstrip(".")
+    return "0" if text in ("", "-0") else text
+
+
+def exact_percent(totals):
+    return 100.0 * (totals["implemented"] + totals["forwarded"]) / totals["declared"] if totals["declared"] else 0.0
+
+
+def names(row, key):
+    return set((row or {}).get(key, []))
+
+
+def done_names(row):
+    return names(row, "implementedNames") | names(row, "forwardedNames")
+
+
+def declared_names(row):
+    return done_names(row) | names(row, "stubNames")
+
+
+def details(summary, entries, limit=100):
+    if not entries:
+        return []
+    lines = ["<details>", f"<summary>{summary}</summary>", "", "| Library | Name |", "| - | - |"]
+    lines += [f"| {library} | `{name}` |" for library, name in entries[:limit]]
+    if len(entries) > limit:
+        lines.append(f"| | and {len(entries) - limit} more |")
+    return lines + ["", "</details>"]
+
+
 def compare(base, head):
     base_rows = {row["name"]: row for row in base["libraries"]}
     head_rows = {row["name"]: row for row in head["libraries"]}
-    lines = [
-        f'**Library functions:** {base["totals"]["implemented"] + base["totals"]["forwarded"]}/{base["totals"]["declared"]} ({base["totals"]["percent"]}%)'
-        f' → {head["totals"]["implemented"] + head["totals"]["forwarded"]}/{head["totals"]["declared"]} ({head["totals"]["percent"]}%)',
-        "",
-    ]
-    changed = []
+    implemented, forwarded, declared, undone, removed, changed = [], [], [], [], [], []
     for name in sorted(set(base_rows) | set(head_rows)):
         before, after = base_rows.get(name), head_rows.get(name)
-        if before and after and all(before[key] == after[key] for key in ("implementedNames", "forwardedNames", "stubNames")):
+        if before and after and all(set(before[key]) == set(after[key]) for key in ("implementedNames", "forwardedNames", "stubNames")):
             continue
         changed.append((name, before, after))
+        implemented += [(name, entry) for entry in sorted(names(after, "implementedNames") - names(before, "implementedNames"))]
+        forwarded += [(name, entry) for entry in sorted(names(after, "forwardedNames") - names(before, "forwardedNames"))]
+        declared += [(name, entry) for entry in sorted(names(after, "stubNames") - declared_names(before))]
+        undone += [(name, entry) for entry in sorted(done_names(before) - done_names(after))]
+        removed += [(name, entry) for entry in sorted(declared_names(before) - declared_names(after))]
     if not changed:
-        lines.append("No library changes.")
-        return "\n".join(lines) + "\n"
-    lines += ["| Library | Before | After | Change |", "|---|---|---|---|"]
+        return ""
+    before_percent, after_percent = exact_percent(base["totals"]), exact_percent(head["totals"])
+    delta = after_percent - before_percent
+    trend = "📈" if delta > 0 else "📉" if delta < 0 else "➖"
+    values = [(label, value) for label, value in (("implemented", len(implemented)), ("forwarded", len(forwarded)), ("no longer done", -len(undone)),
+                                                 ("declared", head["totals"]["declared"] - base["totals"]["declared"])) if value]
+    counts = [f"{value:+d} {label}" for label, value in values]
+    if counts:
+        counts[-1] += " function" if abs(values[-1][1]) == 1 else " functions"
+    sign = "+" if delta > 0 else ""
+    headline = f"{trend} **Libraries**: {number(after_percent, 2)}% ({sign}{number(delta, 4)}%" + (", " + ", ".join(counts) if counts else "") + ")"
+    lines = [headline, ""]
+    if undone:
+        lines += [f"⚠️ **{plural(len(undone), 'function')} no longer done**: " + ", ".join(f"`{library}!{name}`" for library, name in undone[:20]), ""]
+    lines += details(f"✅ {len(implemented)} implemented", implemented)
+    lines += details(f"➡️ {len(forwarded)} forwarded to Windows", forwarded)
+    lines += details(f"🆕 {len(declared)} declared as stubs", declared)
+    lines += details(f"🗑️ {len(removed)} removed", removed)
+    lines += ["", "#### Changed libraries", "", "| Library | Before | After | Change |", "| - | - | - | - |"]
     for name, before, after in changed:
-        cell = lambda row: f'{row["implemented"] + row["forwarded"]}/{row["declared"]} ({row["percent"]}%)' if row else "Not present"
-        delta = f'{after["percent"] - before["percent"]:+.1f}%' if before and after else "n/a"
-        lines.append(f"| {name} | {cell(before)} | {cell(after)} | {delta} |")
-    lines.append("")
-    for name, before, after in changed:
-        before_done = set((before or {}).get("implementedNames", [])) | set((before or {}).get("forwardedNames", []))
-        after_done = set((after or {}).get("implementedNames", [])) | set((after or {}).get("forwardedNames", []))
-        added, removed = sorted(after_done - before_done), sorted(before_done - after_done)
-        if added:
-            lines.append(f"- {name}: newly done {', '.join(added)}")
-        if removed:
-            lines.append(f"- {name}: **no longer done** {', '.join(removed)}")
+        def cell(row):
+            if not row:
+                return "Not present"
+            return f'{row["implemented"] + row["forwarded"]}/{row["declared"]} ({number(exact_percent(row), 2)}%)'
+        change = f"{exact_percent(after) - exact_percent(before):+.2f}%" if before and after else "n/a"
+        lines.append(f"| {name} | {cell(before)} | {cell(after)} | {change} |")
     return "\n".join(lines) + "\n"
 
 
@@ -254,18 +295,23 @@ def main():
     parser.add_argument("output", nargs="?", type=Path, help="directory for progress.json, progress.html, progress.svg and the badge")
     parser.add_argument("--module", action="append", help="limit the totals to this library; repeatable")
     parser.add_argument("--json", action="store_true", help="print progress.json to stdout")
-    parser.add_argument("--compare", nargs=2, type=Path, metavar=("BASE", "HEAD"), help="print a Markdown comparison of two progress.json files")
+    parser.add_argument("--compare", nargs=2, type=Path, metavar=("BASE", "HEAD"), help="print a Markdown comparison of two progress.json files; nothing when no library changed")
+    parser.add_argument("--root", type=Path, help="count another checkout, such as a pull request's base, with this version of the tool")
     args = parser.parse_args()
 
     if args.compare:
         base, head = (json.loads(path.read_text(encoding="utf-8")) for path in args.compare)
-        sys.stdout.write(compare(base, head))
+        sys.stdout.flush()
+        sys.stdout.buffer.write(compare(base, head).encode("utf-8"))
+        sys.stdout.buffer.flush()
         return
-    known, titles = anybox_scan.known_functions()
-    libraries = anybox_scan.scan(only=args.module)
+    root = args.root.resolve() if args.root else anybox_scan.ROOT
+    source = anybox_scan.TreeSource(root)
+    known, titles = anybox_scan.known_functions(root / "docs" / "needs", root / "docs" / "inventory")
+    libraries = anybox_scan.scan(source, only=args.module)
     if args.module:
         known = {dll: functions for dll, functions in known.items() if anybox_scan.route(libraries, dll)}
-    data = snapshot(libraries, commit(), known, titles, anybox_scan.host_patterns())
+    data = snapshot(libraries, commit(root), known, titles, anybox_scan.host_patterns(source))
     if args.json:
         print(json.dumps(data, indent=1))
     elif args.output is None and not args.module:

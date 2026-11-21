@@ -6,9 +6,14 @@ on:
       - core/libs/**
       - tools/anybox_scan.py
       - tools/progress.py
+      - .github/workflows/progress-report.yml
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   report:
@@ -17,15 +22,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Compare base and head
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          report="$RUNNER_TEMP/report"
+          mkdir "$report"
+          echo "$PR" > "$report/pr"
+          git worktree add --detach "$RUNNER_TEMP/base" HEAD^1
+          python tools/progress.py --root "$RUNNER_TEMP/base" --json > "$RUNNER_TEMP/base.json"
           python tools/progress.py --json > "$RUNNER_TEMP/head.json"
-          git worktree add "$RUNNER_TEMP/base" "$BASE_SHA"
-          (cd "$RUNNER_TEMP/base" && python tools/progress.py --json > "$RUNNER_TEMP/base.json") || echo '{"totals":{"implemented":0,"forwarded":0,"declared":0,"percent":0},"libraries":[]}' > "$RUNNER_TEMP/base.json"
-          python tools/progress.py --compare "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          body=$(python tools/progress.py --compare "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json")
+          if [ -n "$body" ]; then
+            printf '### Progress report (%s → %s)\n\n%s\n' "$(git rev-parse --short HEAD^1)" "${HEAD_SHA::7}" "$body" > "$report/report.md"
+            cat "$report/report.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No library changes." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: progress-report
+          path: ${{ runner.temp }}/report

@@ -22,7 +22,8 @@ Progress also counts what AnyBox does not declare yet, from the [export inventor
 python tools/progress.py out/            # progress.json, progress.html, progress.svg, badge-libraries.svg
 python tools/progress.py --module xgameruntime
 python tools/progress.py --json
-python tools/progress.py --compare base.json head.json   # Markdown table for a PR comment
+python tools/progress.py --compare base.json head.json   # the pull request comment; empty when no library changed
+python tools/progress.py --root ../other-checkout --json  # count another checkout with this version of the tool
 ```
 
 ## History
@@ -32,7 +33,7 @@ python tools/progress.py --compare base.json head.json   # Markdown table for a 
 ## Publishing
 
 - [Pages workflow](../../.github/workflows/pages.yml): on pushes to `main` that touch `core/libs`, the tools or the docs, it publishes the progress page, map, badge and history to GitHub Pages.
-- [Progress report workflow](../../.github/workflows/progress-report.yml): on pull requests, it compares the base and head trees and posts the Markdown table to the job summary.
+- [Progress report workflow](../../.github/workflows/progress-report.yml): on pull requests, it counts the base (`--root`) and the merged head with the same version of the tool and compares them. [Progress comment](../../.github/workflows/progress-comment.yml) posts the result on the pull request as one comment, updated on each push and deleted when the change no longer touches a library: the new percentage and its change, the functions implemented, forwarded, newly stubbed, removed or no longer done, and a table of the changed libraries. It runs in a separate workflow because pull requests from forks get a read-only token.
 
 ## What still needs implementing
 

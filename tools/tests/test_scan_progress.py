@@ -51,9 +51,34 @@ class ScanTest(unittest.TestCase):
         library(self.directory.name, "other", ["other.dll"], "ABX_API HRESULT Later();\n", {"Export.cpp": "ABX_API HRESULT Later() { return S_OK; }\n"})
         head = progress.snapshot(anybox_scan.scan(self.source))
         report = progress.compare(base, head)
-        self.assertIn("| other | 0/1 (0.0%) | 1/1 (100.0%) | +100.0% |", report)
-        self.assertIn("other: newly done Later", report)
-        self.assertIn("No library changes.", progress.compare(head, head))
+        self.assertTrue(report.startswith("📈 **Libraries**: 80% (+20%, +1 implemented function)"), report)
+        self.assertIn("| other | `Later` |", report)
+        self.assertIn("| other | 0/1 (0%) | 1/1 (100%) | +100.00% |", report)
+        self.assertEqual(progress.compare(head, head), "")
+
+    def test_compare_lists_regressions_and_new_stubs(self):
+        base = progress.snapshot(anybox_scan.scan(self.source))
+        library(self.directory.name, "other", ["other.dll"], "ABX_API HRESULT Later();\nABX_API HRESULT Newer();\n",
+                {"Export.cpp": "ABX_API HRESULT Later() { AbxNotImplemented(__func__); }\nABX_API HRESULT Newer() { AbxNotImplemented(__func__); }\n"})
+        library(self.directory.name, "demo", ["demo.dll", "demo_*.dll"], HEADER, {"Export.cpp": SOURCE.replace("return value ? S_OK : E_FAIL;", "AbxNotImplemented(__func__);")}, ["Tick=kernel32.GetTickCount64"])
+        report = progress.compare(base, progress.snapshot(anybox_scan.scan(self.source)))
+        self.assertTrue(report.startswith("📉 **Libraries**: 33.33% (-26.6667%, -1 no longer done, +1 declared function)"), report)
+        self.assertIn("⚠️ **1 function no longer done**: `demo!Done`", report)
+        self.assertIn("🆕 1 declared as stubs", report)
+        self.assertIn("| other | `Newer` |", report)
+
+    def test_root_counts_another_checkout(self):
+        import contextlib, io, json, sys
+        output = io.StringIO()
+        arguments = sys.argv
+        sys.argv = ["progress.py", "--root", self.directory.name, "--json"]
+        try:
+            with contextlib.redirect_stdout(output):
+                progress.main()
+        finally:
+            sys.argv = arguments
+        data = json.loads(output.getvalue())
+        self.assertEqual((data["totals"]["declared"], data["totals"]["implemented"], data["totals"]["forwarded"]), (5, 2, 1))
 
     def test_known_functions_and_unserved_dlls(self):
         known = {"demo_xs.dll": {"Done", "Pending", "NotYet"}, "absent.dll": {"A", "B"}, "kernel32.dll": {"Sleep"}}
