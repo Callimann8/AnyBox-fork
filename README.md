@@ -25,6 +25,7 @@ The [progress page](https://dark3581.github.io/AnyBox/progress.html) lists every
 | [xaudio2](core/libs/xdll/xaudio2) | `xaudio2_9.dll` | forwarded to the host's XAudio2 |
 | [gameinput](core/libs/xdll/gameinput) | `gameinput.dll` | forwarded to the host's GameInput |
 | [kernelx](core/libs/xdll/kernelx) | `kernelx.dll` | Win32 subset forwarded to `kernel32` |
+| [xmem](core/libs/xdll/xmem) | `xmem.dll` | entry points declared, all stubs: needs the `XALLOC_ATTRIBUTES` layout |
 
 Unsupported or unexpected states stop the process with a [run report](docs/run-report.schema.json) (`anybox-report.json`) that names the library and function. Nothing returns a made-up success.
 
