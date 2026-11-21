@@ -101,6 +101,7 @@ __declspec(dllimport) HRESULT XGameSaveSubmitUpdate(void* update);
 __declspec(dllimport) HRESULT XGameSaveSubmitUpdateAsync(void* update, AsyncBlock* async);
 __declspec(dllimport) HRESULT XGameSaveSubmitUpdateResult(AsyncBlock* async);
 __declspec(dllimport) HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, std::size_t* consoleIdUsed);
+__declspec(dllimport) HRESULT XSystemGetXboxLiveSandboxId(std::size_t sandboxIdSize, char* sandboxId, std::size_t* sandboxIdUsed);
 }
 
 struct RuntimeOptions {
@@ -887,6 +888,16 @@ int main(int argc, char** argv) {
         if (std::strcmp(id, "00000000.00000000.00000000.00000000.00") != 0) return Fail("console id value");
         if (XSystemGetConsoleId(sizeof(id), id, nullptr) != S_OK) return Fail("console id without used");
         std::printf("console id ok\n");
+        return 0;
+    }
+    if (std::strcmp(scenario, "sandbox_id") == 0) {
+        char id[16] = {};
+        std::size_t used = 0;
+        if (XSystemGetXboxLiveSandboxId(sizeof(id) - 1, id, &used) != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) return Fail("short sandbox id buffer");
+        if (XSystemGetXboxLiveSandboxId(sizeof(id), id, &used) != S_OK || used != sizeof("RETAIL")) return Fail("sandbox id");
+        if (std::strcmp(id, "RETAIL") != 0) return Fail("sandbox id value");
+        if (XSystemGetXboxLiveSandboxId(sizeof(id), id, nullptr) != S_OK) return Fail("sandbox id without used");
+        std::printf("sandbox id ok\n");
         return 0;
     }
     if (std::strcmp(scenario, "async") == 0) {

@@ -139,3 +139,4 @@ using XGameSaveContainerInfoCallback = bool(const XGameSaveContainerInfo* info, 
 using XGameSaveBlobInfoCallback = bool(const XGameSaveBlobInfo* info, void* context);
 
 inline constexpr std::size_t XSystemConsoleIdBytes = 39;
+inline constexpr std::size_t XSystemXboxLiveSandboxIdMaxBytes = 16;

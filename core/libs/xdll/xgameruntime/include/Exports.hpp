@@ -59,6 +59,7 @@ ABX_API HRESULT XGameSaveSubmitUpdateResult(XAsyncBlock* async);
 
 ABX_API XSystemDeviceType XSystemGetDeviceType();
 ABX_API HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, std::size_t* consoleIdUsed);
+ABX_API HRESULT XSystemGetXboxLiveSandboxId(std::size_t sandboxIdSize, char* sandboxId, std::size_t* sandboxIdUsed);
 ABX_API bool XPackageIsPackagedProcess();
 ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier(std::size_t bufferSize, char* buffer);
 
@@ -356,7 +357,6 @@ ABX_API HRESULT XStoreUnregisterPackageLicenseLost();
 ABX_API HRESULT XSystemAllowFullDownloadBandwidth();
 ABX_API HRESULT XSystemGetAnalyticsInfo();
 ABX_API HRESULT XSystemGetRuntimeInfo();
-ABX_API HRESULT XSystemGetXboxLiveSandboxId();
 ABX_API HRESULT XSystemHandleTrack();
 ABX_API HRESULT XSystemIsHandleValid();
 ABX_API HRESULT XUserAddByIdWithUiAsync();

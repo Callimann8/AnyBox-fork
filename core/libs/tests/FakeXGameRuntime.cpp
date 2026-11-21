@@ -59,4 +59,5 @@ __declspec(dllexport) void XGameSaveCloseProvider(void*) {}
 __declspec(dllexport) void XGameSaveCloseContainer(void*) {}
 __declspec(dllexport) void XGameSaveCloseUpdate(void*) {}
 __declspec(dllexport) HRESULT XSystemGetConsoleId(std::size_t, char*, std::size_t*) { return E_FAIL; }
+__declspec(dllexport) HRESULT XSystemGetXboxLiveSandboxId(std::size_t, char*, std::size_t*) { return E_FAIL; }
 }

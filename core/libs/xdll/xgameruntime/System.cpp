@@ -36,3 +36,18 @@ ABX_API HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, 
     }
     return S_OK;
 }
+
+ABX_API HRESULT XSystemGetXboxLiveSandboxId(std::size_t sandboxIdSize, char* sandboxId, std::size_t* sandboxIdUsed) {
+    static constexpr char RetailSandboxId[] = "RETAIL";
+    if (sandboxIdSize < XSystemXboxLiveSandboxIdMaxBytes) {
+        return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    }
+    if (sandboxId == nullptr) {
+        AbxUnsupported(__func__, "sandboxId is null");
+    }
+    std::memcpy(sandboxId, RetailSandboxId, sizeof(RetailSandboxId));
+    if (sandboxIdUsed != nullptr) {
+        *sandboxIdUsed = sizeof(RetailSandboxId);
+    }
+    return S_OK;
+}

@@ -42,6 +42,7 @@ EXPECTED = {
     "device_noexecutable": (0xAB02, "unsupported"),
     "device_unknown": (0xAB02, "unsupported"),
     "console_id": (0, "none"),
+    "sandbox_id": (0, "none"),
     "async": (0, "none"),
     "gamesave": (0, "none"),
     "async_null": (0xAB02, "unsupported"),
@@ -125,6 +126,8 @@ def main():
         assert "task queue ok" in run.stdout
     if args.scenario == "console_id":
         assert "console id ok" in run.stdout
+    if args.scenario == "sandbox_id":
+        assert "sandbox id ok" in run.stdout
     if args.scenario == "async":
         assert "async ok" in run.stdout
     if args.scenario == "startup":
