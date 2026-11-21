@@ -134,6 +134,12 @@ TitleConfig ParseTitleConfig(std::string_view xml) {
     if (config.name.starts_with("ms-resource:")) {
         config.name.clear();
     }
+    if (const auto executable = StartTag(xml, "Executable")) {
+        config.targetDeviceFamily = Attribute(*executable, "TargetDeviceFamily");
+        if (config.targetDeviceFamily.empty()) {
+            config.targetDeviceFamily = "XboxOne";
+        }
+    }
     return config;
 }
 
