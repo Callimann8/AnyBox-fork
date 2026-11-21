@@ -25,7 +25,8 @@ void Check(bool condition, const std::string& message) {
 relinker::LibraryMap TestMap() {
     return relinker::LibraryMap(
         {{"xgameruntime.dll", "ab_xgameruntime.dll", "xgameruntime"}, {"d3d12_x*.dll", "ab_d3d12_x.dll", "d3d12_x"}},
-        {"kernel32.dll", "api-ms-win-*"});
+        {"kernel32.dll", "api-ms-win-*"},
+        {{"xgameruntime", 4, "XGameRuntimeInitialize"}});
 }
 
 test::SyntheticPe Title() {
@@ -171,6 +172,21 @@ void TestRegistry() {
     Check(json.find("\"before\": \"xbox\", \"after\": \"windows-gui\"") != std::string::npos, "subsystem change is listed");
 }
 
+void TestOrdinal() {
+    test::SyntheticPe spec;
+    spec.imports.push_back({"XGameRuntime.dll", {"XTaskQueueCreate"}, {4}, false, false});
+    spec.imports.push_back({"xmystery.dll", {}, {9}, false, false});
+    relinker::ConversionOptions options;
+    options.allowUnknown = true;
+    const auto result = ConvertSpec(spec, options);
+    const pe::PeImage image = pe::Parse(result.bytes);
+    Check(image.imports[0].dll == "ab_xgameruntime.dll" && image.imports[0].functions[1].ordinal == 4, "a pinned ordinal import is routed and stays an ordinal import");
+    spec.imports[0].ordinals.push_back(5);
+    const std::string message = ExpectError([&] { ConvertSpec(spec, options); });
+    Check(message.find("XGameRuntime.dll #5") != std::string::npos, "the error names the unpinned ordinal: " + message);
+    Check(message.find("#4") == std::string::npos && message.find("#9") == std::string::npos, "pinned and unrouted ordinals are not listed: " + message);
+}
+
 void TestExports() {
     test::SyntheticPe spec;
     spec.dll = true;
@@ -189,7 +205,7 @@ int main(int argc, char** argv) {
         {"rename", TestRename}, {"subsystem", TestSubsystem}, {"console", TestConsole}, {"certificate", TestCertificate},
         {"bound", TestBound}, {"delay", TestDelay}, {"unknown", TestUnknown}, {"host", TestHost}, {"bundled", TestBundled},
         {"header-room", TestHeaderRoom}, {"checksum", TestChecksum}, {"not-amd64", TestNotAmd64}, {"registry", TestRegistry},
-        {"exports", TestExports},
+        {"exports", TestExports}, {"ordinal", TestOrdinal},
     };
     int failures = 0;
     for (const auto& [name, test] : tests) {
