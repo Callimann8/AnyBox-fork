@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import shutil
 import struct
 import subprocess
@@ -41,6 +42,7 @@ EXPECTED = {
     "device_noexecutable": (0xAB02, "unsupported"),
     "device_unknown": (0xAB02, "unsupported"),
     "async": (0, "none"),
+    "gamesave": (0, "none"),
     "async_null": (0xAB02, "unsupported"),
     "async_terminated": (0xAB02, "unsupported"),
     "async_begin_terminated": (0xAB02, "unsupported"),
@@ -110,7 +112,10 @@ def main():
     assert (out / "ab_xgameruntime.dll").exists() and (out / "ab_runtime.dll").exists(), "libraries are copied"
 
     argument = "device" if args.scenario in DEVICES else args.scenario
-    run = subprocess.run([str(converted), argument], cwd=out, capture_output=True, text=True, timeout=60)
+    local = args.work / "localappdata"
+    local.mkdir()
+    env = dict(os.environ, LOCALAPPDATA=str(local))
+    run = subprocess.run([str(converted), argument], cwd=out, env=env, capture_output=True, text=True, timeout=60)
     print(run.stdout)
     print(run.stderr, file=sys.stderr)
     code, kind = EXPECTED[args.scenario]
@@ -121,6 +126,10 @@ def main():
         assert "async ok" in run.stdout
     if args.scenario == "startup":
         assert "startup ok" in run.stdout
+    if args.scenario == "gamesave":
+        assert "gamesave ok" in run.stdout
+        saves = local / "AnyBox" / "1234ABCD" / "XGameSave"
+        assert sorted(path.name for path in saves.iterdir()) == ["keep.xgs"], list(saves.iterdir())
     if device is not None:
         assert f"device type {device} packaged 0" in run.stdout, run.stdout
 
