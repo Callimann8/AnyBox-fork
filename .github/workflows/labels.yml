@@ -21,16 +21,10 @@ jobs:
       - run: |
           label() { gh label create "$1" --color "$2" --description "$3" --force; }
 
+          label libs            1d76db 'core/libs: libraries, runtime and their tests'
           label relinker        5319e7 'core/relinker'
-          label xgameruntime    1d76db 'core/libs/xdll/xgameruntime'
-          label d3d12           1d76db 'core/libs/xdll/d3d12_x'
-          label runtime         0e8a16 'core/libs/runtime'
-          label libs            c5def5 'Other libraries under core/libs/xdll'
-          label tests           bfdadc 'Tests'
           label tools           fef2c0 'tools/'
-          label build           bfd4f2 'CMake, submodules, 3rdparty'
-          label docs            0075ca 'Documentation'
-          label 'needs data'    d4c5f9 'Title needs records or export inventories'
+          label docs            0075ca 'Documentation only'
           label ci              5319e7 '.github'
           label 'fixes issue'   d73a4a 'Closes an issue (Fixes #N)'
           label 'unblocks title' 2ea043 'Names a title ID on the Unblocks line'

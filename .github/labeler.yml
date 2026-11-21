@@ -1,61 +1,19 @@
+libs:
+  - changed-files:
+      - any-glob-to-any-file: 'core/libs/**'
+
 relinker:
   - changed-files:
       - any-glob-to-any-file: 'core/relinker/**'
 
-xgameruntime:
-  - changed-files:
-      - any-glob-to-any-file: 'core/libs/xdll/xgameruntime/**'
-
-d3d12:
-  - changed-files:
-      - any-glob-to-any-file: 'core/libs/xdll/d3d12_x/**'
-
-runtime:
-  - changed-files:
-      - any-glob-to-any-file: 'core/libs/runtime/**'
-
-libs:
-  - changed-files:
-      - all-globs-to-any-file:
-          - 'core/libs/xdll/**'
-          - '!core/libs/xdll/xgameruntime/**'
-          - '!core/libs/xdll/d3d12_x/**'
-
-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'core/libs/tests/**'
-          - 'core/relinker/tests/**'
-          - 'tools/tests/**'
-
 tools:
   - changed-files:
-      - all-globs-to-any-file:
-          - 'tools/**'
-          - '!tools/tests/**'
-
-build:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/CMakeLists.txt'
-          - '**/*.cmake'
-          - '.gitmodules'
-          - '3rdparty/**'
-
-docs:
-  - changed-files:
-      - all-globs-to-any-file:
-          - '{**/*.md,docs/**}'
-          - '!docs/dev/debt/changes/**'
-          - '!docs/needs/**'
-          - '!docs/inventory/**'
-
-needs data:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'docs/needs/**'
-          - 'docs/inventory/**'
+      - any-glob-to-any-file: 'tools/**'
 
 ci:
   - changed-files:
       - any-glob-to-any-file: '.github/**'
+
+docs:
+  - changed-files:
+      - all-globs-to-all-files: '{**/*.md,docs/**}'
