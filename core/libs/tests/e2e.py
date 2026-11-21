@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import shutil
 import struct
 import subprocess
@@ -40,10 +41,16 @@ EXPECTED = {
     "device_none": (0xAB02, "unsupported"),
     "device_noexecutable": (0xAB02, "unsupported"),
     "device_unknown": (0xAB02, "unsupported"),
+    "console_id": (0, "none"),
+    "sandbox_id": (0, "none"),
     "async": (0, "none"),
+    "gamesave": (0, "none"),
     "async_null": (0xAB02, "unsupported"),
     "async_terminated": (0xAB02, "unsupported"),
     "async_begin_terminated": (0xAB02, "unsupported"),
+    "startup": (0, "none"),
+    "startup_options": (0xAB02, "unsupported"),
+    "thread_assert": (0xAB02, "unsupported"),
 }
 
 STOPPED_IN = {
@@ -54,6 +61,8 @@ STOPPED_IN = {
     "async_null": "XAsyncGetStatus",
     "async_terminated": "XAsyncComplete",
     "async_begin_terminated": "XAsyncBegin",
+    "startup_options": "XGameRuntimeInitializeWithOptions",
+    "thread_assert": "XThreadAssertNotTimeSensitive",
 }
 
 
@@ -105,15 +114,28 @@ def main():
     assert (out / "ab_xgameruntime.dll").exists() and (out / "ab_runtime.dll").exists(), "libraries are copied"
 
     argument = "device" if args.scenario in DEVICES else args.scenario
-    run = subprocess.run([str(converted), argument], cwd=out, capture_output=True, text=True, timeout=60)
+    local = args.work / "localappdata"
+    local.mkdir()
+    env = dict(os.environ, LOCALAPPDATA=str(local))
+    run = subprocess.run([str(converted), argument], cwd=out, env=env, capture_output=True, text=True, timeout=60)
     print(run.stdout)
     print(run.stderr, file=sys.stderr)
     code, kind = EXPECTED[args.scenario]
     assert (run.returncode & 0xFFFFFFFF) == code, f"exit code 0x{run.returncode & 0xFFFFFFFF:x}, expected 0x{code:x}"
     if args.scenario == "taskqueue":
         assert "task queue ok" in run.stdout
+    if args.scenario == "console_id":
+        assert "console id ok" in run.stdout
+    if args.scenario == "sandbox_id":
+        assert "sandbox id ok" in run.stdout
     if args.scenario == "async":
         assert "async ok" in run.stdout
+    if args.scenario == "startup":
+        assert "startup ok" in run.stdout
+    if args.scenario == "gamesave":
+        assert "gamesave ok" in run.stdout
+        saves = local / "AnyBox" / "1234ABCD" / "XGameSave"
+        assert sorted(path.name for path in saves.iterdir()) == ["keep.xgs"], list(saves.iterdir())
     if device is not None:
         assert f"device type {device} packaged 0" in run.stdout, run.stdout
 

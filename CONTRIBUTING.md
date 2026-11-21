@@ -18,6 +18,7 @@ Search open pull requests for the function name before you start, so two people 
 |---|---|
 | Implement a stub | Replace the `AbxNotImplemented(__func__)` body with the real behaviour, give the declaration its real signature, and add a test. Keep an exact signature from the public GDK headers; do not copy Microsoft's headers into the repository. |
 | Use the host's implementation unchanged | Add `Name=hostdll.Name` to the library's `Forwards.def` and remove its stub. Only when the console and desktop contracts match; record any doubt in debt. |
+| Serve an import by ordinal | Add `<Name> @<ordinal>` to the library's `Ordinals.txt`. CMake pins the export at that ordinal, and the relinker refuses a title that imports an ordinal no library pins. |
 | Add imports a title needs | `python tools/import_audit.py <package> --json audit.json` then `python tools/stubgen.py --from-audit audit.json`. Commit the generated stubs, declarations and debt fragment. |
 | Serve a new DLL | `python tools/stubgen.py --new-library <name> --dll <name>.dll`, then reconfigure CMake. |
 | Change the relinker | Build with `-DANYBOX_RELINKER_ONLY=ON` (works on Linux and macOS too) and add a case to [RelinkerTests.cpp](core/relinker/tests/RelinkerTests.cpp). |

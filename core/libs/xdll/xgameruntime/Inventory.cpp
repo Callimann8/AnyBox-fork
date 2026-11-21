@@ -1,7 +1,5 @@
 #include "xdll/xgameruntime/xgameruntime.hpp"
 
-ABX_API HRESULT XGameRuntimeInitializeWithOptions() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameRuntimeIsFeatureAvailable() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueCreateComposite() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueGetPort() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XTaskQueueRegisterMonitor() { AbxNotImplemented(__func__); }
@@ -18,24 +16,7 @@ ABX_API HRESULT XUserGetLocalId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserGetState() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserRegisterForChangeEvent() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserUnregisterForChangeEvent() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveInitializeProvider() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveInitializeProviderAsync() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveInitializeProviderResult() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveCloseProvider() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveCreateContainer() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveCloseContainer() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveCreateUpdate() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveCloseUpdate() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveSubmitBlobWrite() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveSubmitUpdate() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveReadBlobData() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveGetRemainingQuota() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetConsoleId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAppSpecificDeviceId() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadIsTimeSensitive() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadSetTimeSensitive() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XThreadAssertNotTimeSensitive() { AbxNotImplemented(__func__); }
 
 ABX_API HRESULT XAppBroadcastGetStatus() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XAppBroadcastIsAppBroadcasting() { AbxNotImplemented(__func__); }
@@ -83,24 +64,9 @@ ABX_API HRESULT XGameInviteRegisterForEvent() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameInviteUnregisterForEvent() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameProtocolRegisterForActivation() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameProtocolUnregisterForActivation() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveDeleteContainer() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveDeleteContainerAsync() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveDeleteContainerResult() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveEnumerateBlobInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveEnumerateBlobInfoByName() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveEnumerateContainerInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveEnumerateContainerInfoByName() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveFilesGetFolderWithUiAsync() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveFilesGetFolderWithUiResult() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameSaveFilesGetRemainingQuota() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveGetContainerInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveGetRemainingQuotaAsync() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveGetRemainingQuotaResult() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveReadBlobDataAsync() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveReadBlobDataResult() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveSubmitBlobDelete() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveSubmitUpdateAsync() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XGameSaveSubmitUpdateResult() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameStreamingGetClientCount() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameStreamingGetClientIPAddress() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XGameStreamingGetClients() { AbxNotImplemented(__func__); }
@@ -324,7 +290,6 @@ ABX_API HRESULT XStoreUnregisterPackageLicenseLost() { AbxNotImplemented(__func_
 ABX_API HRESULT XSystemAllowFullDownloadBandwidth() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAnalyticsInfo() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetRuntimeInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetXboxLiveSandboxId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemHandleTrack() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemIsHandleValid() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserAddByIdWithUiAsync() { AbxNotImplemented(__func__); }
