@@ -115,7 +115,20 @@ class ScanTest(unittest.TestCase):
         self.assertIn('<span class="tag stub">stub</span><code>Pending</code>', rendered)
         self.assertIn('<span class="tag done">implemented</span><code>Done</code>', rendered)
         self.assertIn('<span class="tag forwarded">forwarded</span><code>Tick</code>', rendered)
-        self.assertIn("<summary>4 functions: 2 implemented, 1 forwarded, 1 stub</summary>", rendered)
+        self.assertIn('<li class="library" id="fn-demo"><details open><summary><b>demo</b> <span class="count">3/4 done</span>', rendered)
+        self.assertIn('<a href="#fn-demo">4 ↓</a>', rendered)
+
+    def test_area_folders(self):
+        names = [f"XUser{n}" for n in "ABC"] + [f"XStore{n}" for n in "ABCD"] + ["XErrorA", "Lonely"]
+        self.assertEqual(progress.area_folders(names), [
+            ("XStore", ["XStoreA", "XStoreB", "XStoreC", "XStoreD"]),
+            ("XUser", ["XUserA", "XUserB", "XUserC"]),
+            ("other", ["Lonely", "XErrorA"]),
+        ])
+        many = [f"XGameSaveCall{n}" for n in range(50)] + [f"XGameUiShow{n}" for n in range(40)] + ["XGameGetX"]
+        folders = progress.area_folders(many)
+        self.assertEqual([label for label, _ in folders], ["XGame"])
+        self.assertEqual([label for label, _ in folders[0][1]], ["XGameSave", "XGameUi", "other"])
         self.assertEqual(progress.name_list([], "stubs"), "")
         self.assertIn("<details open><summary>2 stubs</summary>", progress.name_list(["A", "B"], "stubs"))
         self.assertIn("<details><summary>13 stubs</summary>", progress.name_list([str(n) for n in range(13)], "stubs"))

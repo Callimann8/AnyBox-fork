@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from html import escape
@@ -266,15 +267,71 @@ STATUS_TAGS = (("implemented", "implementedNames", "done"), ("forwarded", "forwa
                ("stub", "stubNames", "stub"), ("not declared", "missingNames", "missing"))
 
 
-def function_list(row, open_up_to=12):
-    entries = sorted(((name, label, css) for label, key, css in STATUS_TAGS for name in row.get(key, [])), key=lambda entry: entry[0].lower())
-    if not entries:
-        return ""
-    counts = [plural(len(row[key]), "stub") if label == "stub" else f"{len(row[key])} {label}" for label, key, _ in STATUS_TAGS if row.get(key)]
-    items = "".join(f'<li><span class="tag {css}">{label}</span><code>{escape(name)}</code></li>' for name, label, css in entries)
-    state = " open" if len(entries) <= open_up_to else ""
-    return (f'<details{state}><summary>{plural(len(entries), "function")}: {", ".join(counts)}</summary>'
-            f'<ol class="names">{items}</ol></details>')
+NAME_WORD = re.compile(r"[A-Z][a-z0-9]*|[0-9]+|[a-z]+")
+FLAT_UP_TO, SPLIT_OVER, SMALLEST_FOLDER = 30, 80, 3
+
+
+def name_prefix(name, words):
+    parts = NAME_WORD.findall(name)
+    return "".join(parts[:words]) if len(parts) > words else None
+
+
+def area_folders(names, words=2):
+    groups = {}
+    for name in names:
+        groups.setdefault(name_prefix(name, words), []).append(name)
+    folders, other = [], []
+    for prefix, members in sorted(groups.items(), key=lambda item: (item[0] is None, (item[0] or "").lower())):
+        if prefix is None or len(members) < SMALLEST_FOLDER:
+            other += members
+        elif len(members) > SPLIT_OVER:
+            folders.append((prefix, area_folders(members, words + 1)))
+        else:
+            folders.append((prefix, sorted(members, key=str.lower)))
+    if other:
+        folders.append(("other", sorted(other, key=str.lower)))
+    return folders
+
+
+def statuses(row):
+    return {name: (label, css) for label, key, css in STATUS_TAGS for name in row.get(key, [])}
+
+
+def leaf_names(node):
+    return [name for child in node for name in (leaf_names(child[1]) if isinstance(child, tuple) else [child])]
+
+
+def tree_count(names, status):
+    done = sum(status[name][1] in ("done", "forwarded") for name in names)
+    return f'<span class="count">{done}/{len(names)} done</span>'
+
+
+def tree_nodes(node, status):
+    parts = []
+    for child in node:
+        if isinstance(child, tuple):
+            label, inner = child
+            parts.append(f'<li class="folder"><details open><summary>{escape(label)} {tree_count(leaf_names(inner), status)}</summary>'
+                         f'<ul>{tree_nodes(inner, status)}</ul></details></li>')
+        else:
+            label, css = status[child]
+            parts.append(f'<li><span class="tag {css}">{label}</span><code>{escape(child)}</code></li>')
+    return "".join(parts)
+
+
+def function_tree(rows):
+    parts = []
+    for row in sorted(rows, key=lambda row: row["name"]):
+        status = statuses(row)
+        if not status:
+            continue
+        names = sorted(status, key=str.lower)
+        folders = area_folders(names) if len(names) > FLAT_UP_TO else []
+        node = folders if len(folders) > 1 else names
+        share = row.get("knownPercent", row["percent"])
+        parts.append(f'<li class="library" id="fn-{escape(row["name"])}"><details open><summary><b>{escape(row["name"])}</b> {tree_count(names, status)}'
+                     f'<div class="bar"><span style="width:{share}%"></span></div></summary><ul>{tree_nodes(node, status)}</ul></details></li>')
+    return f'<ul class="tree">{"".join(parts)}</ul>'
 
 
 def page(data):
@@ -283,7 +340,7 @@ def page(data):
     for row in sorted(data["libraries"], key=lambda row: row["name"]):
         link = f'{SOURCE}/{anybox_scan.XDLL}/{row["name"]}'
         debt = f'{SOURCE}/docs/dev/debt/{row["name"]}.md'
-        lists = function_list(row)
+        functions = len(statuses(row))
         missing = row.get("missing", 0)
         known = row.get("known", row["declared"])
         share = row.get("knownPercent", row["percent"])
@@ -292,7 +349,7 @@ def page(data):
             f'<tr><td><a href="{link}">{escape(row["name"])}</a></td><td>{escape(", ".join(row["dlls"]))}</td>'
             f'<td>{row["implemented"]}</td><td>{row["forwarded"]}</td><td>{row["stub"]}</td><td>{missing_cell}</td><td>{known}</td>'
             f'<td><div class="bar"><span style="width:{share}%"></span></div>{share}%</td>'
-            f'<td><a href="{debt}">debt</a></td><td class="stubs">{lists}</td></tr>')
+            f'<td><a href="{debt}">debt</a></td><td><a href="#fn-{escape(row["name"])}">{functions} ↓</a></td></tr>')
     unserved = []
     for row in data.get("unserved", []):
         stem = "".join(character if character.isalnum() or character == "_" else "_" for character in row["dll"].rsplit(".", 1)[0])
@@ -315,6 +372,11 @@ th,td{{border-bottom:1px solid #30363d;padding:6px;text-align:left;vertical-alig
 .bar span{{display:block;height:8px;background:{DONE}}} .stubs{{color:#8b949e;font-size:12px;min-width:280px}}
 summary{{cursor:pointer;color:#58a6ff}} ol.names{{margin:4px 0 8px;padding-left:2.6em;max-height:420px;overflow-y:auto}}
 ol.names li{{line-height:1.7}} ol.names code{{color:#e6edf3;font-size:12px}}
+.tree,.tree ul{{list-style:none;margin:0;padding-left:0}} .tree ul{{padding-left:20px;margin-left:7px;border-left:1px solid #30363d}}
+.tree li{{position:relative;line-height:1.75}} .tree ul>li{{padding-left:14px}}
+.tree ul>li::before{{content:"";position:absolute;left:0;top:.9em;width:10px;border-top:1px solid #30363d}}
+.tree summary{{color:#e6edf3}} .tree li.library{{margin:14px 0}} .tree li.library>details>summary{{font-size:16px}}
+.tree .count{{color:#8b949e;font-size:12px;margin:0 8px}} .tree .bar{{vertical-align:middle}}
 .tag{{display:inline-block;width:86px;margin-right:8px;padding:0 6px;border-radius:9px;font-size:11px;text-align:center;color:#fff}}
 .tag.done{{background:{DONE}}} .tag.forwarded{{background:{FORWARDED}}} .tag.stub{{background:{TODO}}} .tag.missing{{background:{MISSING};border:1px solid #484f58}}
 .wrap{{overflow-x:auto}} img{{max-width:100%}} .note{{color:#8b949e;font-size:12px}}
@@ -327,6 +389,9 @@ Compatibility lives in the <a href="https://github.com/{REPOSITORY}/discussions/
 <p><img src="progress.svg" alt="progress map"></p>
 <div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Not declared</th><th>Known</th><th>Done</th><th>Known gaps</th><th>Functions</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
+<h2>Functions</h2>
+<p>Every function of every library, by area. Click a folder to fold it.</p>
+{function_tree(data["libraries"])}
 {unserved_html}<p><a href="needs.html">What titles still need</a> · <a href="history.html">Progress history</a> · commit {escape(data["commit"] or "unknown")}</p>
 </body></html>
 """
