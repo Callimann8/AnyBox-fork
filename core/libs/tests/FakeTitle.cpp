@@ -47,6 +47,7 @@ __declspec(dllimport) void XTaskQueueSetCurrentProcessTaskQueue(void* queue);
 __declspec(dllimport) HRESULT XUserAddAsync();
 __declspec(dllimport) std::uint32_t XSystemGetDeviceType();
 __declspec(dllimport) bool XPackageIsPackagedProcess();
+__declspec(dllimport) HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, std::size_t* consoleIdUsed);
 }
 
 namespace {
@@ -638,6 +639,16 @@ int main(int argc, char** argv) {
     }
     if (std::strcmp(scenario, "device") == 0) {
         std::printf("device type %u packaged %d\n", XSystemGetDeviceType(), XPackageIsPackagedProcess() ? 1 : 0);
+        return 0;
+    }
+    if (std::strcmp(scenario, "console_id") == 0) {
+        char id[39] = {};
+        std::size_t used = 0;
+        if (XSystemGetConsoleId(sizeof(id) - 1, id, &used) != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) return Fail("short console id buffer");
+        if (XSystemGetConsoleId(sizeof(id), id, &used) != S_OK || used != sizeof(id)) return Fail("console id");
+        if (std::strcmp(id, "00000000.00000000.00000000.00000000.00") != 0) return Fail("console id value");
+        if (XSystemGetConsoleId(sizeof(id), id, nullptr) != S_OK) return Fail("console id without used");
+        std::printf("console id ok\n");
         return 0;
     }
     if (std::strcmp(scenario, "async") == 0) {

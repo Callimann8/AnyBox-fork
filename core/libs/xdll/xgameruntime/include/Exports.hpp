@@ -28,6 +28,7 @@ ABX_API HRESULT XAsyncGetResultSize(XAsyncBlock* asyncBlock, std::size_t* buffer
 ABX_API HRESULT XAsyncGetResult(XAsyncBlock* asyncBlock, const void* identity, std::size_t bufferSize, void* buffer, std::size_t* bufferUsed);
 
 ABX_API XSystemDeviceType XSystemGetDeviceType();
+ABX_API HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, std::size_t* consoleIdUsed);
 ABX_API bool XPackageIsPackagedProcess();
 
 ABX_API HRESULT XGameRuntimeInitializeWithOptions();
@@ -61,7 +62,6 @@ ABX_API HRESULT XGameSaveSubmitUpdate();
 ABX_API HRESULT XGameSaveReadBlobData();
 ABX_API HRESULT XGameSaveGetRemainingQuota();
 ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier();
-ABX_API HRESULT XSystemGetConsoleId();
 ABX_API HRESULT XSystemGetAppSpecificDeviceId();
 ABX_API HRESULT XThreadIsTimeSensitive();
 ABX_API HRESULT XThreadSetTimeSensitive();
