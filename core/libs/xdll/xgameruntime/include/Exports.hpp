@@ -58,6 +58,7 @@ ABX_API HRESULT XGameSaveSubmitUpdateAsync(XGameSaveUpdateHandle updateContext, 
 ABX_API HRESULT XGameSaveSubmitUpdateResult(XAsyncBlock* async);
 
 ABX_API XSystemDeviceType XSystemGetDeviceType();
+ABX_API HRESULT XSystemGetConsoleId(std::size_t consoleIdSize, char* consoleId, std::size_t* consoleIdUsed);
 ABX_API bool XPackageIsPackagedProcess();
 ABX_API HRESULT XPackageGetCurrentProcessPackageIdentifier(std::size_t bufferSize, char* buffer);
 
@@ -81,7 +82,6 @@ ABX_API HRESULT XUserGetLocalId();
 ABX_API HRESULT XUserGetState();
 ABX_API HRESULT XUserRegisterForChangeEvent();
 ABX_API HRESULT XUserUnregisterForChangeEvent();
-ABX_API HRESULT XSystemGetConsoleId();
 ABX_API HRESULT XSystemGetAppSpecificDeviceId();
 
 ABX_API HRESULT XAppBroadcastGetStatus();

@@ -137,3 +137,5 @@ struct XGameSaveBlob {
 
 using XGameSaveContainerInfoCallback = bool(const XGameSaveContainerInfo* info, void* context);
 using XGameSaveBlobInfoCallback = bool(const XGameSaveBlobInfo* info, void* context);
+
+inline constexpr std::size_t XSystemConsoleIdBytes = 39;

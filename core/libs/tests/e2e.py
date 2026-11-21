@@ -41,6 +41,7 @@ EXPECTED = {
     "device_none": (0xAB02, "unsupported"),
     "device_noexecutable": (0xAB02, "unsupported"),
     "device_unknown": (0xAB02, "unsupported"),
+    "console_id": (0, "none"),
     "async": (0, "none"),
     "gamesave": (0, "none"),
     "async_null": (0xAB02, "unsupported"),
@@ -122,6 +123,8 @@ def main():
     assert (run.returncode & 0xFFFFFFFF) == code, f"exit code 0x{run.returncode & 0xFFFFFFFF:x}, expected 0x{code:x}"
     if args.scenario == "taskqueue":
         assert "task queue ok" in run.stdout
+    if args.scenario == "console_id":
+        assert "console id ok" in run.stdout
     if args.scenario == "async":
         assert "async ok" in run.stdout
     if args.scenario == "startup":

@@ -16,7 +16,6 @@ ABX_API HRESULT XUserGetLocalId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserGetState() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserRegisterForChangeEvent() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserUnregisterForChangeEvent() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetConsoleId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAppSpecificDeviceId() { AbxNotImplemented(__func__); }
 
 ABX_API HRESULT XAppBroadcastGetStatus() { AbxNotImplemented(__func__); }
