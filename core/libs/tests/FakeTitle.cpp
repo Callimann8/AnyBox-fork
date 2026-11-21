@@ -830,7 +830,12 @@ int GameSaveAsync(void* provider) {
     void* update = nullptr;
     if (XGameSaveCreateUpdate(container, nullptr, &update) != S_OK || XGameSaveSubmitBlobDelete(update, "alpha") != S_OK) return Fail("delete alpha");
     block = AsyncBlock{};
-    if (XGameSaveSubmitUpdateAsync(update, &block) != S_OK || XAsyncGetStatus(&block, true) != S_OK || XGameSaveSubmitUpdateResult(&block) != S_OK) return Fail("submit update async");
+    AsyncBlock second{};
+    if (XGameSaveSubmitUpdateAsync(update, &block) != S_OK) return Fail("submit update async");
+    if (XGameSaveSubmitUpdateAsync(update, &second) != HandleExpired) return Fail("update submitted twice async while pending");
+    if (XAsyncGetStatus(&block, true) != S_OK || XGameSaveSubmitUpdateResult(&block) != S_OK) return Fail("submit update async result");
+    second = AsyncBlock{};
+    if (XGameSaveSubmitUpdateAsync(update, &second) != HandleExpired) return Fail("update submitted twice async");
     XGameSaveCloseUpdate(update);
     SaveSeen seen;
     if (XGameSaveGetContainerInfo(provider, "slots/one", &seen, SeeContainer) != S_OK || seen.container.blobCount != 1 || std::strcmp(seen.displayName, "Slot One") != 0) return Fail("container after async delete");
