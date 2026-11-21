@@ -17,9 +17,7 @@ class InventoryError(Exception):
 
 
 def export_name(symbol, name_type, hint, extra):
-    if name_type == 0:
-        return f"#{hint}"
-    if name_type == 1:
+    if name_type in (0, 1):
         return symbol
     stripped = symbol[1:] if symbol[:1] in ("?", "@", "_") else symbol
     if name_type == 2:
@@ -36,7 +34,7 @@ def read_import_library(path):
     if not data.startswith(ARCHIVE_MAGIC):
         raise InventoryError(f"{path}: not an archive (.lib)")
     entries = {}
-    long_format = 0
+    objects = 0
     offset = len(ARCHIVE_MAGIC)
     while offset + 60 <= len(data):
         header = data[offset:offset + 60]
@@ -50,9 +48,9 @@ def read_import_library(path):
             continue
         if len(body) < 20:
             continue
-        sig1, sig2, _version, machine, _time, length, hint, bits = struct.unpack_from("<HHHHIIHH", body, 0)
-        if sig1 != 0 or sig2 != 0xFFFF:
-            long_format += 1
+        sig1, sig2, version, machine, _time, length, hint, bits = struct.unpack_from("<HHHHIIHH", body, 0)
+        if sig1 != 0 or sig2 != 0xFFFF or version != 0:
+            objects += 1
             continue
         strings = body[20:20 + length].split(b"\0")
         symbol = strings[0].decode("ascii", errors="replace")
@@ -60,8 +58,8 @@ def read_import_library(path):
         extra = strings[2].decode("ascii", errors="replace") if len(strings) > 2 and strings[2] else None
         name_type = (bits >> 2) & 7
         entries.setdefault(dll, set()).add(export_name(symbol, name_type, hint, extra))
-    if not entries and long_format:
-        raise InventoryError(f"{path}: long-format import library (GNU dlltool); only short-format (MSVC, LLVM) libraries are read")
+    if not entries and objects:
+        raise InventoryError(f"{path}: no short-format import entries (a static library, or a GNU dlltool import library); read the DLL instead")
     return entries
 
 
@@ -86,6 +84,21 @@ def collect(paths):
     return {dll: sorted(functions) for dll, functions in sorted(inventory.items())}
 
 
+def rename(inventory, renames):
+    result = {}
+    for dll, functions in inventory.items():
+        target = renames.get(dll, dll)
+        result[target] = sorted(set(result.get(target, [])) | set(functions))
+    return dict(sorted(result.items()))
+
+
+def parse_rename(value):
+    source, separator, target = value.partition("=")
+    if not separator or not source or not target:
+        raise argparse.ArgumentTypeError(f"expected FROM=TO, got {value!r}")
+    return source.lower(), target.lower()
+
+
 def coverage(inventory, libraries):
     rows = []
     for dll, functions in inventory.items():
@@ -107,10 +120,12 @@ def main():
     parser.add_argument("paths", nargs="+", type=Path, help=".lib or .dll files, or folders searched recursively")
     parser.add_argument("--json", type=Path, help="write the inventory (docs/inventory/<name>.json) for tools/needs.py")
     parser.add_argument("--label", default="", help="where the inventory came from, for example 'GDK 2410 GRDK'")
+    parser.add_argument("--rename", action="append", type=parse_rename, default=[], metavar="FROM=TO",
+                        help="record the exports of DLL FROM under DLL name TO, applied before --only; repeatable")
     parser.add_argument("--only", action="append", help="keep only this DLL name; repeatable")
     args = parser.parse_args()
 
-    inventory = collect(args.paths)
+    inventory = rename(collect(args.paths), dict(args.rename))
     if args.only:
         wanted = {name.lower() for name in args.only}
         inventory = {dll: functions for dll, functions in inventory.items() if dll in wanted}

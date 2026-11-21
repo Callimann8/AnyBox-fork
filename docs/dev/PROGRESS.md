@@ -32,7 +32,7 @@ python tools/progress.py --compare base.json head.json   # Markdown table for a 
 
 Progress counts only what AnyBox already declares. Three tools find everything else and rank it, without implementing anything:
 
-1. [`tools/lib_inventory.py`](../../tools/lib_inventory.py) lists every export of import libraries (`.lib`, short format, as an installed GDK ships them) or DLLs, and stores the names in [`docs/inventory`](../inventory) with `--json`.
+1. [`tools/lib_inventory.py`](../../tools/lib_inventory.py) lists every export of import libraries (`.lib`, short format) or DLLs, and stores the names in [`docs/inventory`](../inventory) with `--json`. The inventory from the public PC GDK is committed; [its README](../inventory/README.md) says how it was made.
 2. [`tools/import_audit.py`](../../tools/import_audit.py) `--needs docs/needs/<TitleId>.json` stores what one title imports, minus host and bundled DLLs, in [`docs/needs`](../needs).
 3. [`tools/needs.py`](../../tools/needs.py) merges both with the current library scan:
    - every known function, with its DLL, the library that serves it, its status and the titles that import it, sorted so the functions most titles need and AnyBox lacks come first;

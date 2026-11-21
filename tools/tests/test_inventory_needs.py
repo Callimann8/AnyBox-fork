@@ -48,7 +48,20 @@ class InventoryTest(unittest.TestCase):
         ]))
         inventory = lib_inventory.collect([self.root])
         self.assertEqual(inventory["xgameruntime.dll"], ["XGameRuntimeInitialize", "XRealName", "XUserAddAsync", "XUserGetId"])
-        self.assertEqual(inventory["other.dll"], ["#42"])
+        self.assertEqual(inventory["other.dll"], ["Ordinal"])
+
+    def test_skips_objects_with_import_signature(self):
+        path = self.root / "static.lib"
+        anonymous = struct.pack("<HHHHIIHH", 0, 0xFFFF, 1, 0x8664, 0, 4, 0, 0) + bytes(40)
+        path.write_bytes(b"!<arch>\n" + member("/", bytes(4)) + member("a.obj/", anonymous))
+        with self.assertRaises(lib_inventory.InventoryError):
+            lib_inventory.read_import_library(path)
+        path.write_bytes(import_library([("XGameRuntimeInitialize", "XGameRuntime.dll")]) + member("a.obj/", anonymous))
+        self.assertEqual(lib_inventory.read_import_library(path), {"xgameruntime.dll": {"XGameRuntimeInitialize"}})
+
+    def test_rename(self):
+        inventory = {"a.thunks.dll": ["X", "Y"], "a.dll": ["Init", "X"]}
+        self.assertEqual(lib_inventory.rename(inventory, {"a.thunks.dll": "a.dll"}), {"a.dll": ["Init", "X", "Y"]})
 
     def test_rejects_non_archive(self):
         path = self.root / "bad.lib"
