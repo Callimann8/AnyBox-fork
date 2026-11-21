@@ -2,7 +2,7 @@ import json
 import unittest
 from pathlib import Path
 
-from helpers import library, synthetic_pe, temp_root
+from helpers import library, synthetic_pe, temp_root, write
 
 import anybox_scan
 import check_conventions
@@ -17,10 +17,11 @@ class AuditStubgenTest(unittest.TestCase):
         library(self.root, "demo", ["demo.dll"], "ABX_API HRESULT Done();\nABX_API HRESULT Pending();\n",
                 {"Export.cpp": "ABX_API HRESULT Done() { return S_OK; }\nABX_API HRESULT Pending() { AbxNotImplemented(__func__); }\n"},
                 ["Tick=kernel32.GetTickCount64"])
+        write(self.root, "core/libs/xdll/demo/Ordinals.txt", "Tick @7\nPending @8\n")
         self.title = self.root / "package" / "title.exe"
         self.title.parent.mkdir()
         self.title.write_bytes(synthetic_pe([
-            ("demo.dll", ["Done", "Pending", "Tick", "Missing", 5]),
+            ("demo.dll", ["Done", "Pending", "Tick", "Missing", 5, 7, 8]),
             ("kernel32.dll", ["Sleep"]),
             ("mystery_x.dll", ["Thing"]),
             ("game.dll", ["Engine"]),
@@ -42,6 +43,8 @@ class AuditStubgenTest(unittest.TestCase):
         self.assertEqual(status[("demo.dll", "Tick")], "forwarded")
         self.assertEqual(status[("demo.dll", "Missing")], "absent")
         self.assertEqual(status[("demo.dll", "#5")], "absent")
+        self.assertEqual(status[("demo.dll", "#7")], "forwarded")
+        self.assertEqual(status[("demo.dll", "#8")], "stub")
         self.assertEqual(status[("kernel32.dll", "Sleep")], "host")
         self.assertEqual(status[("mystery_x.dll", "Thing")], "unrouted")
         self.assertEqual(status[("game.dll", "Engine")], "bundled")

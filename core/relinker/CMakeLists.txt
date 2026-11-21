@@ -8,7 +8,7 @@ add_library(anybox_relinker_core STATIC
 target_include_directories(anybox_relinker_core PUBLIC relinker/include PRIVATE ${ANYBOX_GENERATED_DIR})
 target_link_libraries(anybox_relinker_core PUBLIC anybox_pe)
 set_property(SOURCE relinker/src/LibraryMap.cpp APPEND PROPERTY OBJECT_DEPENDS
-    ${ANYBOX_GENERATED_DIR}/LibraryMapData.inc ${ANYBOX_GENERATED_DIR}/HostDllsData.inc)
+    ${ANYBOX_GENERATED_DIR}/LibraryMapData.inc ${ANYBOX_GENERATED_DIR}/HostDllsData.inc ${ANYBOX_GENERATED_DIR}/LibraryOrdinalsData.inc)
 
 add_executable(relinker main.cpp)
 set_target_properties(relinker PROPERTIES OUTPUT_NAME anybox-relinker RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -24,7 +24,7 @@ if(BUILD_TESTING)
     if(MINGW)
         target_link_options(relinker_tests PRIVATE -static)
     endif()
-    foreach(test_case IN ITEMS rename subsystem certificate bound delay unknown host bundled console header-room checksum not-amd64 registry exports)
+    foreach(test_case IN ITEMS rename subsystem certificate bound delay unknown host bundled console header-room checksum not-amd64 registry exports ordinal)
         add_test(NAME relinker_${test_case} COMMAND relinker_tests ${test_case})
     endforeach()
 endif()
