@@ -254,13 +254,21 @@ def progress_map(data):
                       svg_rect(0, 0, full, height, MAP_BACKGROUND, MAP_BACKGROUND, 0), *body, "</svg>"]) + "\n"
 
 
+def name_list(names, label, open_up_to=12):
+    if not names:
+        return ""
+    state = " open" if len(names) <= open_up_to else ""
+    items = "".join(f"<li><code>{escape(name)}</code></li>" for name in names)
+    return f'<details{state}><summary>{len(names)} {escape(label)}</summary><ol class="names">{items}</ol></details>'
+
+
 def page(data):
     totals = data["totals"]
     rows = []
     for row in sorted(data["libraries"], key=lambda row: row["name"]):
         link = f'{SOURCE}/{anybox_scan.XDLL}/{row["name"]}'
         debt = f'{SOURCE}/docs/dev/debt/{row["name"]}.md'
-        stubs = ", ".join(row["stubNames"][:40]) + (" ..." if len(row["stubNames"]) > 40 else "")
+        lists = name_list(row["stubNames"], "stubs") + name_list(row.get("missingNames", []), "not declared yet")
         missing = row.get("missing", 0)
         known = row.get("known", row["declared"])
         share = row.get("knownPercent", row["percent"])
@@ -269,14 +277,13 @@ def page(data):
             f'<tr><td><a href="{link}">{escape(row["name"])}</a></td><td>{escape(", ".join(row["dlls"]))}</td>'
             f'<td>{row["implemented"]}</td><td>{row["forwarded"]}</td><td>{row["stub"]}</td><td>{missing_cell}</td><td>{known}</td>'
             f'<td><div class="bar"><span style="width:{share}%"></span></div>{share}%</td>'
-            f'<td><a href="{debt}">debt</a></td><td class="stubs">{escape(stubs)}</td></tr>')
+            f'<td><a href="{debt}">debt</a></td><td class="stubs">{lists}</td></tr>')
     unserved = []
     for row in data.get("unserved", []):
-        names = ", ".join(row["missingNames"][:40]) + (" ..." if len(row["missingNames"]) > 40 else "")
         stem = "".join(character if character.isalnum() or character == "_" else "_" for character in row["dll"].rsplit(".", 1)[0])
         unserved.append(
             f'<tr><td>{escape(row["dll"])}</td><td>{row["missing"]}</td><td>{row["titles"]}</td>'
-            f'<td><code>python tools/stubgen.py --new-library {escape(stem)} --dll {escape(row["dll"])}</code></td><td class="stubs">{escape(names)}</td></tr>')
+            f'<td><code>python tools/stubgen.py --new-library {escape(stem)} --dll {escape(row["dll"])}</code></td><td class="stubs">{name_list(row["missingNames"], "functions")}</td></tr>')
     unserved_html = (
         '<h2>DLLs with no AnyBox library</h2>\n<p>Known from title needs records or export inventories, but nothing serves them yet. A title that imports one cannot be converted.</p>\n'
         '<div class="wrap"><table><thead><tr><th>DLL</th><th>Known functions</th><th>Titles</th><th>Start it with</th><th>Functions</th></tr></thead>\n'
@@ -290,7 +297,9 @@ body{{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;margin:0
 a{{color:#58a6ff}} table{{border-collapse:collapse;width:100%;font-size:14px}}
 th,td{{border-bottom:1px solid #30363d;padding:6px;text-align:left;vertical-align:top}}
 .bar{{display:inline-block;width:90px;height:8px;background:{TODO};margin-right:6px}}
-.bar span{{display:block;height:8px;background:{DONE}}} .stubs{{color:#8b949e;font-size:12px}}
+.bar span{{display:block;height:8px;background:{DONE}}} .stubs{{color:#8b949e;font-size:12px;min-width:280px}}
+summary{{cursor:pointer;color:#58a6ff}} ol.names{{margin:4px 0 8px;padding-left:2.6em;max-height:420px;overflow-y:auto}}
+ol.names li{{line-height:1.6}} ol.names code{{color:#e6edf3;font-size:12px}}
 .wrap{{overflow-x:auto}} img{{max-width:100%}} .note{{color:#8b949e;font-size:12px}}
 </style></head><body>
 <h1>AnyBox progress</h1>
@@ -299,7 +308,7 @@ th,td{{border-bottom:1px solid #30363d;padding:6px;text-align:left;vertical-alig
 <p>Counted from the source: a function is a stub while its body calls <code>AbxNotImplemented</code>. Known functions come from the export inventories in <code>docs/inventory</code> and the title needs records in <code>docs/needs</code>; a library marked as not known yet has no inventory, so its count grows as titles are audited. A count says nothing about whether a title runs.
 Compatibility lives in the <a href="https://github.com/{REPOSITORY}/discussions/categories/game-bring-up">Game bring-up</a> discussions; pick a stub to work on from the table.</p>
 <p><img src="progress.svg" alt="progress map"></p>
-<div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Not declared</th><th>Known</th><th>Done</th><th>Known gaps</th><th>Stubs to pick up</th></tr></thead>
+<div class="wrap"><table><thead><tr><th>Library</th><th>Serves</th><th>Implemented</th><th>Forwarded</th><th>Stubs</th><th>Not declared</th><th>Known</th><th>Done</th><th>Known gaps</th><th>Functions to pick up</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
 {unserved_html}<p><a href="needs.html">What titles still need</a> · <a href="history.html">Progress history</a> · commit {escape(data["commit"] or "unknown")}</p>
 </body></html>

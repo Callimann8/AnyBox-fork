@@ -111,7 +111,10 @@ class ScanTest(unittest.TestCase):
     def test_outputs_render(self):
         data = progress.snapshot(anybox_scan.scan(self.source), "0" * 40)
         self.assertIn("<svg", progress.progress_map(data))
-        self.assertIn("Pending", progress.page(data))
+        self.assertIn("<li><code>Pending</code></li>", progress.page(data))
+        self.assertEqual(progress.name_list([], "stubs"), "")
+        self.assertIn("<details open><summary>2 stubs</summary>", progress.name_list(["A", "B"], "stubs"))
+        self.assertIn("<details><summary>13 stubs</summary>", progress.name_list([str(n) for n in range(13)], "stubs"))
         self.assertIn("60.0%", progress.badge("libraries", "60.0%", progress.DONE))
 
 
