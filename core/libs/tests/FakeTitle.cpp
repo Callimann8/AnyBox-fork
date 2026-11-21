@@ -515,7 +515,8 @@ int AsyncCancel() {
     AsyncBlock idleBlock{};
     idleBlock.queue = manual;
     if (XAsyncBegin(&idleBlock, nullptr, nullptr, nullptr, IdleProvider) != S_OK) return Fail("begin on a terminated queue");
-    if (XAsyncSchedule(&idleBlock, 0) != E_ABORT || XAsyncSchedule(&idleBlock, 0) != E_ABORT) return Fail("schedule twice on a terminated queue");
+    if (XAsyncSchedule(&idleBlock, 0) != E_ABORT) return Fail("schedule on a terminated queue");
+    if (XAsyncSchedule(&idleBlock, 0) != E_UNEXPECTED) return Fail("schedule again after the queue refused the work");
     XAsyncComplete(&idleBlock, E_ABORT, 0);
     if (XAsyncGetStatus(&idleBlock, true) != E_ABORT) return Fail("status after scheduling on a terminated queue");
     XTaskQueueCloseHandle(manual);
