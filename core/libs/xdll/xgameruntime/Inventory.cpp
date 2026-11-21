@@ -16,7 +16,6 @@ ABX_API HRESULT XUserGetLocalId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserGetState() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserRegisterForChangeEvent() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserUnregisterForChangeEvent() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetConsoleId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAppSpecificDeviceId() { AbxNotImplemented(__func__); }
 
 ABX_API HRESULT XAppBroadcastGetStatus() { AbxNotImplemented(__func__); }
@@ -291,7 +290,6 @@ ABX_API HRESULT XStoreUnregisterPackageLicenseLost() { AbxNotImplemented(__func_
 ABX_API HRESULT XSystemAllowFullDownloadBandwidth() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetAnalyticsInfo() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemGetRuntimeInfo() { AbxNotImplemented(__func__); }
-ABX_API HRESULT XSystemGetXboxLiveSandboxId() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemHandleTrack() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XSystemIsHandleValid() { AbxNotImplemented(__func__); }
 ABX_API HRESULT XUserAddByIdWithUiAsync() { AbxNotImplemented(__func__); }
