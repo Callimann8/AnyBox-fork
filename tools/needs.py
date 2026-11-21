@@ -9,20 +9,13 @@ import anybox_scan
 import progress
 
 ROOT = anybox_scan.ROOT
-NEEDS_DIR = ROOT / "docs" / "needs"
-INVENTORY_DIR = ROOT / "docs" / "inventory"
+NEEDS_DIR = anybox_scan.NEEDS_DIR
+INVENTORY_DIR = anybox_scan.INVENTORY_DIR
 DONE = ("implemented", "forwarded")
 ORDER = {"unrouted": 0, "absent": 1, "stub": 2, "implemented": 3, "forwarded": 3}
 
 
-def load(directory, kind):
-    records = []
-    for path in sorted(directory.glob("*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        if record.get("format") != kind:
-            raise SystemExit(f"{path}: format is not {kind}")
-        records.append(record)
-    return records
+load = anybox_scan.load_records
 
 
 def build(titles, inventories, libraries, hosts):

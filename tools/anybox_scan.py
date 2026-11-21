@@ -1,9 +1,12 @@
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 XDLL = "core/libs/xdll"
+NEEDS_DIR = ROOT / "docs" / "needs"
+INVENTORY_DIR = ROOT / "docs" / "inventory"
 STUB_CALL = re.compile(r"\bAbxNotImplemented\s*\(")
 DEFINITION = re.compile(r"\bABX_API\s+[\w:<>*&\s]*?\b(\w+)\s*\(([^;{}]*)\)\s*(?:noexcept\s*)?\{")
 DECLARATION = re.compile(r"\bABX_API\s+[\w:<>*&\s]*?\b(\w+)\s*\(([^;{}]*)\)\s*(?:noexcept\s*)?;")
@@ -160,3 +163,27 @@ def route(libraries, dll):
         if any(match_pattern(pattern, lower) for pattern in library.dlls):
             return library
     return None
+
+
+def load_records(directory, kind):
+    records = []
+    for path in sorted(Path(directory).glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if record.get("format") != kind:
+            raise SystemExit(f"{path}: format is not {kind}")
+        records.append(record)
+    return records
+
+
+def known_functions(needs_dir=NEEDS_DIR, inventory_dir=INVENTORY_DIR):
+    functions = {}
+    titles = {}
+    for inventory in load_records(inventory_dir, "anybox-inventory"):
+        for dll, names in inventory["dlls"].items():
+            functions.setdefault(dll.lower(), set()).update(names)
+    for title in load_records(needs_dir, "anybox-needs"):
+        label = title.get("titleId") or title.get("name") or "unknown"
+        for dll, names in title["imports"].items():
+            functions.setdefault(dll.lower(), set()).update(names)
+            titles.setdefault(dll.lower(), set()).add(label)
+    return functions, titles

@@ -10,7 +10,13 @@ What is counted, where it is published, and how to read it.
 - **stub:** an `ABX_API` definition whose body calls `AbxNotImplemented`;
 - **forwarded:** a `Name=dll.Target` line in the library's `Forwards.def`.
 
-Comments, string and character literals are blanked before matching, so braces or names inside them do not count. The percentage is `(implemented + forwarded) / declared`. Declared functions are those the project knows about so far, not every console export. The total grows as `stubgen.py` adds imports found by audits. A count says nothing about whether a title runs; compatibility lives in the Game bring-up discussions.
+Comments, string and character literals are blanked before matching, so braces or names inside them do not count. The percentage is `(implemented + forwarded) / declared`. A count says nothing about whether a title runs; compatibility lives in the Game bring-up discussions.
+
+Progress also counts what AnyBox does not declare yet, from the [export inventories](../inventory) and [title needs records](../needs):
+
+- **not declared:** a function a library's DLLs are known to export or titles import, with no declaration. `known = declared + not declared`, and `knownPercent` is done of known.
+- **export list not known yet** (`*` on the map): no inventory or needs record covers the library's DLLs, so its known total is just what it declares.
+- **DLLs with no library** (`unserved`): DLLs that titles import or inventories list, that no library serves and Windows does not provide. Each is a dashed red tile on the map and a row on the page with the `stubgen.py --new-library` command that starts it.
 
 ```
 python tools/progress.py out/            # progress.json, progress.html, progress.svg, badge-libraries.svg
