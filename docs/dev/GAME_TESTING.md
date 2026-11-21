@@ -48,3 +48,13 @@ analyzeHeadless <project dir> anybox -import <package>\Bink2Scarlett.dll -script
 ```
 
 The output names each call site, its function and the argument setup, for example `RDX <- MOV EDX,0x5e50000` for the attributes passed to `XMemAlloc`. Use it to find which inputs a title exercises and to check a signature against real callers. Values seen in one title describe that title only: implement the function for every input, and put the call sites in the pull request, not in the repository.
+
+## Shader formats
+
+The D3D12.X design ([#4](https://github.com/dark3581/AnyBox/issues/4)) depends on what console shaders contain. [`tools/shader_scan.py`](../../tools/shader_scan.py) finds every DXBC container in a package, loose or embedded in another file, and counts them by kind (`dxil`, `dxbc`, `mixed`, `rootsig`, `other`) and by part tag:
+
+```
+python tools/shader_scan.py <decrypted package folder> --json shaders.json
+```
+
+Part tags that are not standard DXBC parts point at console-specific data. Shaders inside compressed archives are not found. Post the summary line in the issue; the JSON holds names, offsets and part tags only, never shader bytes.
