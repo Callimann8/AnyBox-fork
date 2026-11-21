@@ -1,0 +1,58 @@
+name: PR labels
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pr-labels-${{ github.event.pull_request.number || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  areas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - id: prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo 'numbers<<EOF'
+            if [ -n "$PR" ]; then echo "$PR"; else gh pr list -R "$GITHUB_REPOSITORY" --state open -L 1000 --json number --jq '.[].number'; fi
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - if: steps.prs.outputs.numbers != ''
+        uses: actions/labeler@v5
+        with:
+          pr-number: ${{ steps.prs.outputs.numbers }}
+          sync-labels: true
+
+  description:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR" ]; then
+            python3 -I tools/pr_labels.py --repo "$GITHUB_REPOSITORY" --pr "$PR"
+          else
+            python3 -I tools/pr_labels.py --repo "$GITHUB_REPOSITORY" --all
+          fi

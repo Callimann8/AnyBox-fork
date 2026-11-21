@@ -53,6 +53,7 @@ Toolchains and the relinker-only build are in [BUILD.md](docs/dev/BUILD.md).
 - Known gaps are added, changed or removed through a fragment in `docs/dev/debt/changes/<branch>.md`, never by editing the debt files ([format](docs/dev/TechnicalDebt.md#fragments)). Maintainers fold fragments with `python tools/debt_fold.py`.
 - Investigation notes, logs and screenshots go in the pull request, not in the repository.
 - CI runs the conventions check, the relinker tests on Linux, the full Windows build and tests, and posts the library progress change as a comment.
+- Labels are added for you: the areas a pull request touches (`relinker`, `xgameruntime`, `d3d12`, `runtime`, `libs`, `tests`, `tools`, `build`, `docs`, `needs data`, `ci`, from [labeler.yml](.github/labeler.yml)), `fixes issue` when it closes an issue, and `unblocks title` when its `Unblocks:` line names a title ID.
 - A pull request that conflicts with `main` gets the `needs rebase` label within the hour. Rebase it on current `main` and force-push; the label goes away by itself. After 7 days in conflict with no activity, it is marked `stale` with a reminder. Nothing is closed automatically.
 - Say whether the change was written with AI assistance. The author is responsible for every line.
 
