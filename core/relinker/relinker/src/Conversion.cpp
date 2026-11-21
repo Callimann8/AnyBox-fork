@@ -156,12 +156,20 @@ ConversionResult Convert(std::vector<std::uint8_t> input, const ConversionOption
     result.subsystemBefore = image.subsystem;
 
     std::vector<std::string> unknown;
+    std::string unpinned;
     std::map<std::string, std::vector<std::uint32_t>> renames;
     for (const pe::ImportModule& module : image.imports) {
         const Resolution resolution = map.Resolve(module.dll);
         ResolvedImport resolved{module.dll, resolution.target, resolution.library, resolution.kind, module.delayLoaded, module.functions};
         if (resolution.kind == ImportKind::Unknown) {
             unknown.push_back(module.dll);
+        }
+        if (resolution.kind == ImportKind::Library) {
+            for (const pe::ImportFunction& function : module.functions) {
+                if (function.ordinal && !map.OrdinalName(resolution.library, *function.ordinal)) {
+                    unpinned += std::format("{}{} #{}", unpinned.empty() ? "" : ", ", module.dll, *function.ordinal);
+                }
+            }
         }
         if (resolution.kind == ImportKind::Library && ToLower(resolution.target) != ToLower(module.dll)) {
             renames[resolution.target].push_back(module.nameFieldOffset);
@@ -174,6 +182,10 @@ ConversionResult Convert(std::vector<std::uint8_t> input, const ConversionOption
             list += list.empty() ? dll : ", " + dll;
         }
         throw PeError(std::format("imports from DLLs that no AnyBox library, bundled module or host DLL provides: {} (add a library under core/libs/xdll, pass the title's module folder with --module-dir, or --allow-unknown to keep the names)", list));
+    }
+
+    if (!unpinned.empty()) {
+        throw PeError(std::format("imports by ordinal that no AnyBox library exports at that ordinal: {} (pin the export as '<Name> @<ordinal>' in the library's Ordinals.txt)", unpinned));
     }
 
     StripCertificate(image, result);

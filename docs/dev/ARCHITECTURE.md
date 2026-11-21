@@ -55,6 +55,7 @@ flowchart LR
    2. **library:** a pattern in some `core/libs/xdll/<name>/Imports.txt`. The import is renamed to `ab_<name>.dll`.
    3. **host:** a pattern in [`HostDlls.txt`](../../core/relinker/HostDlls.txt): the desktop OS provides it unchanged (API sets, the CRT, `kernel32`).
    4. **unknown:** conversion fails and names the DLL, unless `--allow-unknown`.
+   An import by ordinal from a library must be pinned in that library's `Ordinals.txt`, or conversion fails and names it.
    CMake generates the table from these files at configure time ([`cmake/LibraryMap.cmake`](../../cmake/LibraryMap.cmake)), so adding a library needs no relinker change.
 3. **Rewrite.** New DLL names go in an appended `.abximp` section, and each descriptor's name RVA is pointed at them. Descriptors, thunks and the IAT stay where they are, so code that calls through the IAT is unaffected. Bound imports are unbound (the IAT is restored from the lookup table). The Authenticode certificate is dropped, because the image no longer matches it. The subsystem becomes Windows GUI (or console with `--console`), and the checksum is recomputed.
 4. **Report.** `--registry` writes `<output>.registry.json` with every import and its route; `tools/import_audit.py` reads PE files directly for the same view against the library sources.
@@ -81,4 +82,4 @@ flowchart LR
 ## Tests
 
 - [`relinker_tests`](../../core/relinker/tests/RelinkerTests.cpp) build synthetic Xbox PE images in memory ([`SyntheticPe.cpp`](../../core/relinker/tests/SyntheticPe.cpp)) and check routing, unbinding, certificate removal, delay imports, header room and checksums.
-- [`e2e.py`](../../core/libs/tests/e2e.py) takes a real title built against a stand-in console `xgameruntime.dll`, marks it as Xbox subsystem, relinks it, runs it on the AnyBox libraries, and checks its output and run report for a working task queue run, XAsync calls (run, wait, provider ops, results, cancellation, a terminated queue and a null block), a stub stop, an unsupported stop, a crash and the reported device type.
+- [`e2e.py`](../../core/libs/tests/e2e.py) takes a real title built against a stand-in console `xgameruntime.dll`, marks it as Xbox subsystem, relinks it, runs it on the AnyBox libraries, and checks its output and run report for a working task queue run, XAsync calls (run, wait, provider ops, results, cancellation, a terminated queue and a null block), XGameSave containers and blobs written, read, enumerated and deleted in a per-title folder, a stub stop, an unsupported stop, a crash and the reported device type.

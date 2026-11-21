@@ -6,7 +6,7 @@ AnyBox relinks GDK (Xbox One / Xbox Series) PE32+ executables into Windows progr
 - An export you cannot implement calls `AbxNotImplemented(__func__)`. A path whose behaviour is unknown calls `AbxUnsupported(__func__, "what is unknown")`. Never return a made-up success.
 - Implement the function for every input. Never special-case a value, title ID or path seen in one title's trace.
 - Every `ABX_API` definition has exactly one declaration in its library's `include/` headers, reachable from `<library>.hpp`. `tools/check_conventions.py` enforces it.
-- A library is one folder under `core/libs/xdll/<name>` with `Imports.txt` (the DLL names it serves), `CMakeLists.txt` (`anybox_add_xdll`), `<name>.hpp`, `include/Exports.hpp`, and optionally `Forwards.def` for exports the host provides unchanged. `tools/stubgen.py --new-library` creates one.
+- A library is one folder under `core/libs/xdll/<name>` with `Imports.txt` (the DLL names it serves), `CMakeLists.txt` (`anybox_add_xdll`), `<name>.hpp`, `include/Exports.hpp`, optionally `Forwards.def` for exports the host provides unchanged, and optionally `Ordinals.txt` (`<Name> @<ordinal>` per line) for exports titles import by ordinal. `tools/stubgen.py --new-library` creates one.
 - Do not replace modules that titles ship themselves (middleware, engine DLLs, XSAPI thunks). The relinker keeps a bundled module's name, and it wins over an AnyBox library.
 - New third-party code is a submodule at `3rdparty/<name>`, built from source with CMake.
 - Commit subjects and PR titles are Conventional Commits: `feat(xgameruntime): implement XAsyncRun`.

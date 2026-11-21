@@ -25,4 +25,37 @@ __declspec(dllexport) HRESULT XAsyncGetResult(void*, const void*, std::size_t, v
 __declspec(dllexport) HRESULT XUserAddAsync() { return E_FAIL; }
 __declspec(dllexport) std::uint32_t XSystemGetDeviceType() { return 0xffffffffu; }
 __declspec(dllexport) bool XPackageIsPackagedProcess() { return true; }
+__declspec(dllexport) HRESULT XGameRuntimeInitializeWithOptions(const void*) { return E_FAIL; }
+__declspec(dllexport) bool XGameRuntimeIsFeatureAvailable(std::uint32_t) { return false; }
+__declspec(dllexport) HRESULT XPackageGetCurrentProcessPackageIdentifier(std::size_t, char*) { return E_FAIL; }
+__declspec(dllexport) HRESULT XThreadSetTimeSensitive(bool) { return E_FAIL; }
+__declspec(dllexport) bool XThreadIsTimeSensitive() { return true; }
+__declspec(dllexport) void XThreadAssertNotTimeSensitive() {}
+__declspec(dllexport) HRESULT XGameSaveInitializeProvider() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveInitializeProviderAsync() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveInitializeProviderResult() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveGetRemainingQuota() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveGetRemainingQuotaAsync() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveGetRemainingQuotaResult() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveDeleteContainer() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveDeleteContainerAsync() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveDeleteContainerResult() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveCreateContainer() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveGetContainerInfo() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveEnumerateContainerInfo() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveEnumerateContainerInfoByName() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveEnumerateBlobInfo() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveEnumerateBlobInfoByName() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveReadBlobData() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveReadBlobDataAsync() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveReadBlobDataResult() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveCreateUpdate() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveSubmitBlobWrite() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveSubmitBlobDelete() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveSubmitUpdate() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveSubmitUpdateAsync() { return E_FAIL; }
+__declspec(dllexport) HRESULT XGameSaveSubmitUpdateResult() { return E_FAIL; }
+__declspec(dllexport) void XGameSaveCloseProvider(void*) {}
+__declspec(dllexport) void XGameSaveCloseContainer(void*) {}
+__declspec(dllexport) void XGameSaveCloseUpdate(void*) {}
 }
